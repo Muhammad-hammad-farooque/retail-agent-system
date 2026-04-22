@@ -1,32 +1,226 @@
-# Agentic Inventory & Finance Orchestration
+# Intelligent Retail Store Automation and Insight Generation System
+### Powered by Agentic AI
 
-This project demonstrates a multi-agent system using the **OpenAI Agents SDK**. It features two autonomous agents collaborating to maintain a warehouse.
+A production-ready multi-agent AI system for retail store management built with OpenAI Agents SDK, FastAPI, PostgreSQL, ChromaDB, and Next.js.
 
-## Agents
-1. **Inventory Agent**: Monitors stock levels. If an item falls below its threshold, it automatically creates a Purchase Order (PO) and hands off the conversation to the Finance Agent.
-2. **Finance Agent**: Reviews the PO, checks the budget, and either approves or rejects the request. On approval, it updates the finance records and simulates a stock delivery.
+---
 
 ## Project Structure
-- `database.py`: SQLite setup for inventory and finance tables.
-- `agent_definitions.py`: Definitions for tools, agents, and handoff logic.
-- `main.py`: The entry point that runs the agentic simulation.
+
+```
+retail-agent-system/
+├── backend/
+│   ├── main.py                    # FastAPI entry point
+│   ├── database.py                # SQLAlchemy engine + session
+│   ├── agents/
+│   │   ├── triage_agent.py        # Main orchestrator
+│   │   ├── inventory_agent.py
+│   │   ├── accounting_agent.py
+│   │   ├── customer_service_agent.py
+│   │   └── marketing_agent.py
+│   ├── tools/
+│   │   ├── inventory_tools.py
+│   │   ├── accounting_tools.py
+│   │   ├── customer_tools.py
+│   │   └── marketing_tools.py
+│   ├── guardrails/
+│   │   ├── input_guardrails.py
+│   │   └── output_guardrails.py
+│   ├── models/
+│   │   ├── product.py
+│   │   ├── invoice.py
+│   │   ├── customer.py
+│   │   ├── sale.py
+│   │   └── user.py
+│   ├── rag/
+│   │   ├── pipeline.py            # ChromaDB RAG pipeline
+│   │   └── faq_documents.py       # 28 FAQ Q&A pairs
+│   ├── auth/
+│   │   ├── jwt_handler.py
+│   │   └── auth_router.py
+│   ├── api/
+│   │   ├── agent_router.py
+│   │   ├── inventory_router.py
+│   │   ├── accounting_router.py
+│   │   └── dashboard_router.py
+│   └── schemas/
+│       ├── auth.py
+│       ├── product.py
+│       ├── invoice.py
+│       └── agent.py
+├── scripts/
+│   ├── seed_data.py               # Seed 50 products, 100 customers, 6 months sales
+│   └── ingest_faq.py              # Embed FAQ docs into ChromaDB
+├── tests/
+│   ├── conftest.py
+│   ├── test_guardrails.py
+│   ├── test_tools.py
+│   ├── test_api.py
+│   └── test_rag.py
+├── evaluation/
+│   ├── evaluator.py
+│   ├── test_cases.py
+│   └── run_eval.py
+├── chroma_db/                     # ChromaDB persistent store
+├── .env
+├── requirements.txt
+└── pytest.ini
+```
+
+---
+
+## Agents
+
+| Agent | Role | Tools |
+|-------|------|-------|
+| **Triage Agent** | Orchestrator — routes queries to specialist agents | Handoffs |
+| **Inventory Agent** | Stock management, reorder alerts, purchase orders | 6 tools |
+| **Accounting Agent** | Invoices, financial summaries, profit & loss | 5 tools |
+| **Customer Service Agent** | Customer info, complaints, loyalty points, FAQ (RAG) | 6 tools |
+| **Marketing Agent** | Promotions, pricing, sales trends, reports | 5 tools |
+
+### Agent Handoff Flow
+```
+User Query → Triage Agent
+  ├── inventory keywords  → Inventory Agent
+  ├── finance keywords    → Accounting Agent
+  ├── customer keywords   → Customer Service Agent (RAG)
+  └── marketing keywords  → Marketing Agent
+```
+
+---
+
+## Guardrails
+
+**Input Guardrails** (before agent runs):
+1. **Scope check** — blocks non-retail queries
+2. **Harmful request check** — blocks hacking, fraud, data manipulation
+3. **Language check** — blocks abusive language (English + Urdu)
+
+**Output Guardrails** (before response is sent):
+1. **Budget limit** — orders > Rs.100,000 flagged for manager approval
+2. **Negative quantity** — invalid stock values blocked
+3. **PII masking** — phone, address, email auto-masked
+
+---
+
+## RAG Pipeline (Customer Service Agent)
+
+- **28 FAQ documents** covering: returns, payments, delivery, loyalty, warranty, complaints, discounts
+- Embedded using OpenAI `text-embedding-3-small`
+- Stored in **ChromaDB** (persistent, cosine similarity)
+- Top-3 relevant chunks injected into agent context on every query
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/register` | Register new user |
+| POST | `/auth/login` | Login and get JWT token |
+| GET | `/auth/me` | Current user info |
+| POST | `/agent/task` | Main agent entry point |
+| GET | `/inventory/products` | List all products |
+| GET | `/inventory/critical` | Low stock items |
+| POST | `/inventory/products` | Add new product |
+| GET | `/accounting/invoices` | List invoices |
+| GET | `/accounting/summary` | Financial summary |
+| GET | `/dashboard/kpis` | Dashboard KPI data |
+| WS | `/ws/alerts` | Real-time low stock alerts |
+
+---
+
+## Tech Stack
+
+- **Backend**: FastAPI, SQLAlchemy 2.0, PostgreSQL
+- **Agents**: OpenAI Agents SDK, GPT-4o
+- **RAG**: ChromaDB, OpenAI Embeddings
+- **Auth**: JWT (python-jose, bcrypt)
+- **Testing**: pytest, pytest-asyncio
+- **Frontend**: Next.js (Phase 7)
+- **Deployment**: Docker Compose (Phase 8)
+
+---
 
 ## Getting Started
-1. **Install Dependencies**:
-   ```bash
-   pip install openai-agents python-dotenv
-   ```
-2. **Setup API Key**:
-   Create a `.env` file in this directory and add your key:
-   ```
-   OPENAI_API_KEY=your_sk_key_here
-   ```
-3. **Run the Simulation**:
-   ```bash
-   python main.py
-   ```
 
-## Scenario
-The simulation starts with:
-- **Monitors**: 3 in stock (Threshold: 5).
-- **Task**: The Inventory Agent is told that 1 more monitor was shipped. It detects the low stock (2 units), creates a PO, and hands off to Finance to approve the restock.
+### 1. Install Dependencies
+```bash
+cd retail-agent-system
+pip install -r requirements.txt
+pip install "pydantic[email]"
+```
+
+### 2. Configure Environment
+```bash
+# Edit .env with your credentials
+OPENAI_API_KEY=sk-your-key
+DATABASE_URL=postgresql://user:pass@localhost/retaildb
+JWT_SECRET=your-secret-key
+```
+
+### 3. Setup Database
+```bash
+# Create PostgreSQL database
+psql -U postgres -c "CREATE DATABASE retaildb;"
+
+# Seed synthetic data
+python scripts/seed_data.py
+```
+
+### 4. Ingest FAQ into ChromaDB
+```bash
+python scripts/ingest_faq.py
+```
+
+### 5. Run the Server
+```bash
+uvicorn backend.main:app --reload
+# Swagger docs: http://localhost:8000/docs
+```
+
+---
+
+## Testing
+
+```bash
+# Run all tests
+python -m pytest tests/ -v
+
+# Run evaluation framework
+python -m evaluation.run_eval
+```
+
+**Test Results:** 40/40 passed | Evaluation: 21/21 — 100%
+
+---
+
+## Build Phases
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 1 | PostgreSQL schema + seed data | ✅ Done |
+| 2 | FastAPI backend + JWT auth | ✅ Done |
+| 3 | All 5 agents with tools | ✅ Done |
+| 4 | Guardrails (input + output) | ✅ Done |
+| 5 | RAG pipeline with ChromaDB | ✅ Done |
+| 6 | Evaluation framework + tests | ✅ Done |
+| 7 | Next.js dashboard + WebSocket | 🔄 Pending |
+| 8 | Docker Compose + deployment | 🔄 Pending |
+
+---
+
+## Environment Variables
+
+```env
+OPENAI_API_KEY=
+DATABASE_URL=postgresql://user:pass@localhost/retaildb
+REDIS_URL=redis://localhost:6379
+CHROMA_PERSIST_DIR=./chroma_db
+SMTP_EMAIL=
+SMTP_PASSWORD=
+JWT_SECRET=
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=30
+```

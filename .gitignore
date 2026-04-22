@@ -1,1 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment variables
 .env
+.env.local
+.env.production
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+warehouse.db
+
+# ChromaDB
+chroma_db/
+
+# Pytest
+.pytest_cache/
+test_retail.db
+htmlcov/
+.coverage
+coverage.xml
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node.js (Phase 7 - Next.js)
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Docker
+*.env.docker
+
+# Uploads / media
+uploads/
+media/
+
+# JWT / secrets
+*.pem
+*.key
+*.cert
