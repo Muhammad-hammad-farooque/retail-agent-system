@@ -138,7 +138,7 @@ User Query → Triage Agent
 - **RAG**: ChromaDB, OpenAI Embeddings
 - **Auth**: JWT (python-jose, bcrypt)
 - **Testing**: pytest, pytest-asyncio
-- **Frontend**: Next.js (Phase 7)
+- **Frontend**: Next.js 14, Tailwind CSS, Axios, WebSocket
 - **Deployment**: Docker Compose (Phase 8)
 
 ---
@@ -180,6 +180,20 @@ uvicorn backend.main:app --reload
 # Swagger docs: http://localhost:8000/docs
 ```
 
+### 6. Run the Frontend
+```bash
+cd frontend
+npm install
+npm run dev
+# Dashboard: http://localhost:3000
+```
+
+**Dashboard pages:**
+- `/dashboard` — KPI cards + real-time low-stock alerts (WebSocket)
+- `/inventory` — Product list with category filter and pagination
+- `/accounting` — Invoices with status filter + financial summary
+- `/agent` — AI chat interface (routes to all 5 agents)
+
 ---
 
 ## Testing
@@ -206,7 +220,7 @@ python -m evaluation.run_eval
 | 4 | Guardrails (input + output) | ✅ Done |
 | 5 | RAG pipeline with ChromaDB | ✅ Done |
 | 6 | Evaluation framework + tests | ✅ Done |
-| 7 | Next.js dashboard + WebSocket | 🔄 Pending |
+| 7 | Next.js dashboard + WebSocket | ✅ Done |
 | 8 | Docker Compose + deployment | 🔄 Pending |
 
 ---
