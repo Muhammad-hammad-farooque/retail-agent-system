@@ -1,7 +1,10 @@
+import time
 from typing import Optional
 from ..database import SessionLocal
 from ..models.customer import Customer
 from ..models.invoice import Invoice, InvoiceStatus
+from ..models.complaint import Complaint
+from ..models.notification import Notification, NotificationType
 from ..rag.pipeline import rag_pipeline
 
 
@@ -115,13 +118,31 @@ def handle_complaint(customer_id: int, complaint: str) -> str:
     try:
         customer = db.query(Customer).filter(Customer.id == customer_id).first()
         name = customer.name if customer else f"Customer #{customer_id}"
-        # In production this would persist to a complaints table
+        reference = f"COMP-{customer_id}-{time.strftime('%Y%m%d%H%M%S')}"
+        record = Complaint(
+            customer_id=customer_id,
+            complaint=complaint,
+            reference=reference,
+        )
+        db.add(record)
+        notif = Notification(
+            type=NotificationType.complaint,
+            title="New Customer Complaint",
+            message=f"{name}: {complaint[:100]}",
+            reference_id=customer_id,
+            reference_type="customer",
+        )
+        db.add(notif)
+        db.commit()
         return (
             f"Complaint Registered for {name}:\n"
             f"Issue: {complaint}\n"
             f"Status: RECEIVED\n"
             f"Resolution: Our team will contact you within 24 hours.\n"
-            f"Reference: COMP-{customer_id}-{__import__('time').strftime('%Y%m%d%H%M%S')}"
+            f"Reference: {reference}"
         )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to register complaint: {str(e)}"
     finally:
         db.close()

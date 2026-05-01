@@ -1,6 +1,9 @@
+import time
 from typing import Optional
 from ..database import SessionLocal
 from ..models.product import Product
+from ..models.purchase_order import PurchaseOrder
+from ..models.notification import Notification, NotificationType
 
 
 def _db():
@@ -105,8 +108,28 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
         if not product:
             return f"Product with ID {product_id} not found."
         total_cost = product.cost_price * quantity
+        order_number = f"PO-{product_id}-{time.strftime('%Y%m%d%H%M%S')}"
+        po = PurchaseOrder(
+            order_number=order_number,
+            product_id=product_id,
+            quantity=quantity,
+            unit_cost=product.cost_price,
+            total_cost=total_cost,
+            supplier=product.supplier,
+        )
+        db.add(po)
+        notif = Notification(
+            type=NotificationType.purchase_order,
+            title="Purchase Order Created",
+            message=f"PO {order_number} for {product.name} — {quantity} units from {product.supplier or 'supplier'}",
+            reference_id=product_id,
+            reference_type="product",
+        )
+        db.add(notif)
+        db.commit()
         return (
             f"Purchase Order Created:\n"
+            f"Order Number: {order_number}\n"
             f"Product: {product.name} (SKU: {product.sku})\n"
             f"Supplier: {product.supplier or 'Not specified'}\n"
             f"Quantity to Order: {quantity} units\n"
@@ -114,6 +137,9 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
             f"Total Cost: Rs.{total_cost:,.0f}\n"
             f"Status: PENDING APPROVAL"
         )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to create purchase order: {str(e)}"
     finally:
         db.close()
 

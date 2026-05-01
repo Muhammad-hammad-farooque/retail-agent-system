@@ -8,6 +8,11 @@ from .api.inventory_router import router as inventory_router
 from .api.accounting_router import router as accounting_router
 from .api.dashboard_router import router as dashboard_router
 from .api.agent_router import router as agent_router
+from .api.customer_router import router as customer_router
+from .api.complaint_router import router as complaint_router
+from .api.purchase_order_router import router as purchase_order_router
+from .api.marketing_router import router as marketing_router
+from .api.notification_router import router as notification_router
 
 load_dotenv()
 
@@ -36,6 +41,11 @@ app.include_router(agent_router)
 app.include_router(inventory_router)
 app.include_router(accounting_router)
 app.include_router(dashboard_router)
+app.include_router(customer_router)
+app.include_router(complaint_router)
+app.include_router(purchase_order_router)
+app.include_router(marketing_router)
+app.include_router(notification_router)
 
 
 @app.get("/health")

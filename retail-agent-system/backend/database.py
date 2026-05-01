@@ -22,4 +22,9 @@ def get_db():
 
 
 def create_tables():
+    # Import all models so SQLAlchemy registers them before creating tables
+    from .models import (  # noqa: F401
+        Product, Invoice, InvoiceItem, Customer, Sale, User,
+        Complaint, PurchaseOrder, Promotion, Notification,
+    )
     Base.metadata.create_all(bind=engine)

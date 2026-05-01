@@ -4,6 +4,8 @@ from sqlalchemy import func
 from ..database import SessionLocal
 from ..models.product import Product
 from ..models.sale import Sale
+from ..models.promotion import Promotion
+from ..models.notification import Notification, NotificationType
 
 
 def _db():
@@ -108,6 +110,24 @@ def create_promotion(product_id: int, discount_pct: float, start_date: str, end_
                 f"Discount of {discount_pct}% would price the product below cost. "
                 f"Maximum allowed discount: {((product.price - product.cost_price) / product.price * 100):.1f}%"
             )
+        promo = Promotion(
+            product_id=product_id,
+            discount_pct=discount_pct,
+            original_price=product.price,
+            promo_price=discounted_price,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        db.add(promo)
+        notif = Notification(
+            type=NotificationType.promotion,
+            title="New Promotion Created",
+            message=f"{discount_pct}% off on {product.name} from {start_date} to {end_date}",
+            reference_id=product_id,
+            reference_type="product",
+        )
+        db.add(notif)
+        db.commit()
         return (
             f"Promotion Created:\n"
             f"Product: {product.name}\n"
@@ -117,6 +137,9 @@ def create_promotion(product_id: int, discount_pct: float, start_date: str, end_
             f"Valid: {start_date} to {end_date}\n"
             f"Status: ACTIVE"
         )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to create promotion: {str(e)}"
     finally:
         db.close()
 

@@ -31,7 +31,11 @@ retail-agent-system/
 │   │   ├── invoice.py
 │   │   ├── customer.py
 │   │   ├── sale.py
-│   │   └── user.py
+│   │   ├── user.py
+│   │   ├── complaint.py
+│   │   ├── purchase_order.py
+│   │   ├── promotion.py
+│   │   └── notification.py
 │   ├── rag/
 │   │   ├── pipeline.py            # ChromaDB RAG pipeline
 │   │   └── faq_documents.py       # 28 FAQ Q&A pairs
@@ -42,12 +46,32 @@ retail-agent-system/
 │   │   ├── agent_router.py
 │   │   ├── inventory_router.py
 │   │   ├── accounting_router.py
-│   │   └── dashboard_router.py
+│   │   ├── dashboard_router.py
+│   │   ├── customer_router.py
+│   │   ├── complaint_router.py
+│   │   ├── purchase_order_router.py
+│   │   ├── marketing_router.py
+│   │   └── notification_router.py
 │   └── schemas/
 │       ├── auth.py
 │       ├── product.py
 │       ├── invoice.py
 │       └── agent.py
+├── frontend/                      # Next.js 14 dashboard
+│   ├── app/
+│   │   ├── dashboard/page.tsx     # KPI cards + WebSocket alerts
+│   │   ├── inventory/page.tsx     # Product list + critical stock
+│   │   ├── accounting/page.tsx    # Invoices + financial summary
+│   │   ├── agent/page.tsx         # AI agent chat interface
+│   │   └── login/page.tsx         # JWT login
+│   ├── components/
+│   │   ├── Navbar.tsx
+│   │   ├── KpiCard.tsx
+│   │   ├── AlertBanner.tsx        # Real-time WebSocket alerts
+│   │   ├── AgentChat.tsx
+│   │   └── ProductTable.tsx
+│   ├── lib/api.ts                 # Axios API client
+│   └── context/AuthContext.tsx    # JWT auth state
 ├── scripts/
 │   ├── seed_data.py               # Seed 50 products, 100 customers, 6 months sales
 │   └── ingest_faq.py              # Embed FAQ docs into ChromaDB
@@ -124,10 +148,41 @@ User Query → Triage Agent
 | GET | `/inventory/products` | List all products |
 | GET | `/inventory/critical` | Low stock items |
 | POST | `/inventory/products` | Add new product |
+| PATCH | `/inventory/products/{id}` | Update product |
 | GET | `/accounting/invoices` | List invoices |
 | GET | `/accounting/summary` | Financial summary |
+| GET | `/customers` | List all customers |
+| GET | `/customers/{id}` | Get customer by ID |
+| PATCH | `/customers/{id}/loyalty` | Update loyalty points |
+| GET | `/complaints` | List all complaints |
+| PATCH | `/complaints/{id}/status` | Update complaint status |
+| GET | `/purchase-orders` | List all purchase orders |
+| PATCH | `/purchase-orders/{id}/status` | Approve/reject PO |
+| GET | `/marketing/promotions` | List promotions |
+| GET | `/marketing/trends` | Sales trends |
+| GET | `/marketing/top-products` | Top products by revenue |
+| GET | `/notifications` | List all notifications |
+| GET | `/notifications/unread-count` | Unread count |
+| PATCH | `/notifications/mark-all-read` | Mark all as read |
 | GET | `/dashboard/kpis` | Dashboard KPI data |
 | WS | `/ws/alerts` | Real-time low stock alerts |
+
+---
+
+## Database Tables
+
+| # | Table | Purpose |
+|---|-------|---------|
+| 1 | `users` | Authentication and role-based access |
+| 2 | `products` | Inventory management |
+| 3 | `customers` | Customer profiles and loyalty points |
+| 4 | `invoices` | Billing and payments |
+| 5 | `invoice_items` | Per-product invoice details |
+| 6 | `sales` | Revenue and profit tracking |
+| 7 | `complaints` | Customer complaint history |
+| 8 | `purchase_orders` | Vendor restock orders |
+| 9 | `promotions` | Active discount promotions |
+| 10 | `notifications` | System event log |
 
 ---
 

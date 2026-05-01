@@ -27,6 +27,8 @@ ENV/
 *.sqlite
 *.sqlite3
 warehouse.db
+schema.sql
+*.sql
 
 # ChromaDB
 chroma_db/
@@ -66,6 +68,7 @@ yarn-error.log*
 
 # Docker
 *.env.docker
+.env.docker
 
 # Uploads / media
 uploads/
