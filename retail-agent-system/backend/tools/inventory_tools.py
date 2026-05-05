@@ -2,6 +2,7 @@ import time
 from typing import Optional
 from ..database import SessionLocal
 from ..models.product import Product
+from ..models.supplier import Supplier
 from ..models.purchase_order import PurchaseOrder
 from ..models.notification import Notification, NotificationType
 
@@ -109,9 +110,21 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
             return f"Product with ID {product_id} not found."
         total_cost = product.cost_price * quantity
         order_number = f"PO-{product_id}-{time.strftime('%Y%m%d%H%M%S')}"
+
+        # Auto-link supplier record by name match
+        supplier_id = None
+        if product.supplier:
+            sup = db.query(Supplier).filter(
+                Supplier.name.ilike(f"%{product.supplier}%"),
+                Supplier.is_active == True,
+            ).first()
+            if sup:
+                supplier_id = sup.id
+
         po = PurchaseOrder(
             order_number=order_number,
             product_id=product_id,
+            supplier_id=supplier_id,
             quantity=quantity,
             unit_cost=product.cost_price,
             total_cost=total_cost,
@@ -131,7 +144,7 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
             f"Purchase Order Created:\n"
             f"Order Number: {order_number}\n"
             f"Product: {product.name} (SKU: {product.sku})\n"
-            f"Supplier: {product.supplier or 'Not specified'}\n"
+            f"Supplier: {product.supplier or 'Not specified'}{' (linked)' if supplier_id else ''}\n"
             f"Quantity to Order: {quantity} units\n"
             f"Unit Cost: Rs.{product.cost_price:,.0f}\n"
             f"Total Cost: Rs.{total_cost:,.0f}\n"

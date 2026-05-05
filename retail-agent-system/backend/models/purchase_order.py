@@ -19,6 +19,7 @@ class PurchaseOrder(Base):
     id = Column(Integer, primary_key=True, index=True)
     order_number = Column(String(50), unique=True, nullable=False)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    supplier_id = Column(Integer, ForeignKey("suppliers.id"), nullable=True)
     quantity = Column(Integer, nullable=False)
     unit_cost = Column(Float, nullable=False)
     total_cost = Column(Float, nullable=False)
@@ -29,3 +30,4 @@ class PurchaseOrder(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     product = relationship("Product")
+    supplier_rel = relationship("Supplier", back_populates="purchase_orders")
