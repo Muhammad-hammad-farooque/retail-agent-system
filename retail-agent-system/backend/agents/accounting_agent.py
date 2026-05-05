@@ -5,6 +5,8 @@ from ..tools.accounting_tools import (
     calculate_profit_loss,
     get_revenue_by_category,
     get_top_selling_products,
+    approve_purchase_order,
+    reject_purchase_order,
 )
 
 accounting_agent = Agent(
@@ -18,14 +20,17 @@ Responsibilities:
 - Calculate profit and loss reports
 - Break down revenue by product category
 - Identify top-selling products by revenue
+- Approve or reject purchase orders raised by the Inventory Agent
 
 Rules:
 - All amounts are in PKR (Pakistani Rupees) — always prefix with Rs.
 - Format large numbers with commas (e.g., Rs.1,25,000)
-- Flag any invoice with net_amount > Rs.100,000 as requiring manager approval
+- Any purchase order with total_cost > Rs.100,000 must NOT be approved — flag for manager
+- When approving a PO, the system automatically emails the vendor if email is on record
+- Always ask for a reason when rejecting a purchase order
 - Never reveal sensitive customer personal data in financial reports
 - Be precise with dates — use YYYY-MM-DD format
-- If asked about stock or customer complaints, inform the user you handle accounts only
+- If asked about stock levels or customer complaints, inform the user you handle accounts only
 
 Provide clear financial summaries with totals, percentages, and actionable insights.""",
     tools=[
@@ -34,5 +39,7 @@ Provide clear financial summaries with totals, percentages, and actionable insig
         calculate_profit_loss,
         get_revenue_by_category,
         get_top_selling_products,
+        approve_purchase_order,
+        reject_purchase_order,
     ],
 )
