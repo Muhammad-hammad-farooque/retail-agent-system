@@ -1,4 +1,4 @@
-"""Seed synthetic data: 50 products, 100 customers, 6 months daily sales, invoices."""
+"""Seed synthetic data: suppliers, 50 products, 100 customers, 6 months daily sales, invoices."""
 import sys
 import os
 import random
@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from backend.database import SessionLocal, create_tables
+from backend.models.supplier import Supplier
 from backend.models.product import Product
 from backend.models.customer import Customer
 from backend.models.invoice import Invoice, InvoiceItem, InvoiceStatus
@@ -75,6 +76,52 @@ PRODUCTS_DATA = [
     ("Router TP-Link WiFi6", "ELEC-014", "Electronics", 14000, 10000, "TP-Link Dealer"),
 ]
 
+# (name, email, phone, contact_person) — names must match product supplier text exactly
+SUPPLIERS_DATA = [
+    ("Samsung Pakistan",      "orders@samsung.com.pk",        "+92-21-3456-7890", "Tariq Mehmood"),
+    ("Mobile Accessories Co", "orders@mobileaccessories.pk",  "+92-42-3567-8901", "Bilal Rafiq"),
+    ("JBL Distributor",       "procurement@jbldistributor.pk","+92-51-2345-6789", "Kamran Shah"),
+    ("TechSupply PK",         "orders@techsupplypk.com",      "+92-21-4567-8901", "Hassan Raza"),
+    ("Logitech Dealer",       "logitech@pkdealer.com",        "+92-42-6789-0123", "Usman Ali"),
+    ("Cable World",           "cableworld@gmail.com",         "+92-300-1234567",  "Asif Khan"),
+    ("Al-Karam Textiles",     "procurement@alkaram.com",      "+92-21-3213-4567", "Zahid Hussain"),
+    ("Gul Ahmed",             "orders@gulahmed.com",          "+92-21-3234-5678", "Faisal Ahmed"),
+    ("Levi's Distributor",    "levis@pkdistributor.com",      "+92-42-3890-1234", "Saad Nawaz"),
+    ("Bonanza Textiles",      "bonanza@textiles.pk",          "+92-42-3901-2345", "Imran Sheikh"),
+    ("Outfitters Wholesale",  "wholesale@outfitters.pk",      "+92-51-3012-3456", "Rizwan Butt"),
+    ("Hijab House",           "hijabhouse@gmail.com",         "+92-333-2345678",  "Amina Siddiqui"),
+    ("Nike Pakistan",         "nike@pkdistributor.com",       "+92-21-4123-4567", "Waqas Javed"),
+    ("Nike Sports",           "nikesports@pkdistributor.com", "+92-21-4124-5678", "Waqas Javed"),
+    ("Rice Mills PK",         "ricemills@gmail.com",          "+92-61-3456-7890", "Ghulam Farid"),
+    ("Sufi Foods",            "sufifoods@gmail.com",          "+92-42-3567-8902", "Arif Sufi"),
+    ("Nestle Pakistan",       "nestle@nestle.pk",             "+92-21-5123-4567", "Sadia Malik"),
+    ("Flour Mills",           "flourmills@gmail.com",         "+92-61-4567-8901", "Hamid Rana"),
+    ("Tata Distributor",      "tata@pkdistributor.com",       "+92-21-3678-9012", "Raj Kumar"),
+    ("Unilever Pakistan",     "unilever@unilever.pk",         "+92-21-5234-5678", "Ayesha Noor"),
+    ("Colgate Palmolive",     "colgate@palmolive.pk",         "+92-21-5345-6789", "Naeem Qureshi"),
+    ("Reckitt Benckiser",     "reckitt@reckitt.pk",           "+92-21-5456-7890", "Omar Farhan"),
+    ("Kitchen Pro",           "kitchenpro@gmail.com",         "+92-42-3789-0123", "Salma Bibi"),
+    ("National Cookware",     "national@cookware.pk",         "+92-42-3890-1235", "Tariq Aziz"),
+    ("HomeGoods PK",          "homegoods@pk.com",             "+92-300-3456789",  "Nadia Bashir"),
+    ("Chenab Textiles",       "chenab@textiles.pk",           "+92-47-3901-2346", "Shahid Latif"),
+    ("Anex Electronics",      "anex@electronics.pk",          "+92-42-4012-3457", "Pervez Iqbal"),
+    ("Philips Dealer",        "philips@pkdealer.com",         "+92-21-4234-5679", "Zubair Ahmad"),
+    ("Sports World PK",       "sportsworldpk@gmail.com",      "+92-42-3456-7891", "Junaid Akram"),
+    ("Fitness Pro",           "fitnesspro@gmail.com",         "+92-300-4567890",  "Adnan Malik"),
+    ("Nutrition Plus",        "nutritionplus@gmail.com",      "+92-321-5678901",  "Ahsan Ali"),
+    ("Beiersdorf PK",         "beiersdorf@pk.com",            "+92-21-5678-9013", "Hina Asif"),
+    ("L'Oreal Pakistan",      "loreal@loreal.pk",             "+92-21-5789-0124", "Mehwish Tariq"),
+    ("Color Studio",          "colorstudio@gmail.com",        "+92-300-6789012",  "Sana Riaz"),
+    ("Revlon Distributor",    "revlon@pkdistributor.com",     "+92-42-3901-2347", "Amna Zulfiqar"),
+    ("Fragrance House",       "fragrancehouse@gmail.com",     "+92-300-7890123",  "Khalid Mehmood"),
+    ("Paramount Books",       "paramount@books.pk",           "+92-42-3576-8901", "Irfan Siddiqui"),
+    ("Sang-e-Meel",           "sangemeel@gmail.com",          "+92-42-3723-4567", "Naseem Akhtar"),
+    ("Oxford Pakistan",       "oxford@oxford.pk",             "+92-42-3834-5678", "Rabia Nawaz"),
+    ("Ferozesons",            "ferozesons@gmail.com",         "+92-42-3945-6789", "Farhan Awan"),
+    ("Xiaomi Pakistan",       "xiaomi@xiaomi.pk",             "+92-21-4345-6789", "Li Wei"),
+    ("TP-Link Dealer",        "tplink@pkdealer.com",          "+92-21-4456-7890", "Zeeshan Haider"),
+]
+
 CUSTOMER_NAMES = [
     "Ahmed Ali", "Fatima Khan", "Muhammad Hassan", "Ayesha Malik", "Usman Raza",
     "Zainab Ahmed", "Ali Hassan", "Maryam Siddiqui", "Omar Farooq", "Hina Akhtar",
@@ -110,7 +157,14 @@ def seed_database():
         db.query(Invoice).delete()
         db.query(Customer).delete()
         db.query(Product).delete()
+        db.query(Supplier).delete()
         db.commit()
+
+        # Seed suppliers
+        for name, email, phone, contact in SUPPLIERS_DATA:
+            db.add(Supplier(name=name, email=email, phone=phone, contact_person=contact))
+        db.commit()
+        print(f"Seeded {len(SUPPLIERS_DATA)} suppliers")
 
         # Seed products
         products = []
