@@ -53,3 +53,57 @@ Retail Management System
     except Exception as e:
         print(f"[Email Error] {e}")
         return False
+
+
+def send_complaint_resolution_email(customer, complaint) -> bool:
+    """Send a complaint resolution confirmation email to the customer."""
+    smtp_email = os.getenv("SMTP_EMAIL")
+    smtp_password = os.getenv("SMTP_PASSWORD")
+
+    if not smtp_email or not smtp_password:
+        return False
+    if not customer.email:
+        return False
+
+    from datetime import date
+    resolved_on = date.today().strftime("%Y-%m-%d")
+
+    subject = f"Your Complaint Has Been Resolved — Ref: {complaint.reference}"
+
+    body = f"""Dear {customer.name},
+
+Thank you for contacting us. We are happy to inform you that your complaint has been resolved.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  COMPLAINT RESOLUTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Reference No : {complaint.reference}
+  Issue        : {complaint.complaint}
+  Status       : RESOLVED
+  Resolved On  : {resolved_on}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+We apologize for any inconvenience caused. Our team has addressed your concern and taken the necessary action.
+
+If you have any further questions, please contact us and mention your reference number.
+
+Regards,
+Retail Management Team
+"""
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = smtp_email
+    msg["To"] = customer.email
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(smtp_email, smtp_password)
+            server.sendmail(smtp_email, customer.email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"[Email Error] {e}")
+        return False

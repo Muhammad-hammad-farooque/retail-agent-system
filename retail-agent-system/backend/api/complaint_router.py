@@ -4,8 +4,11 @@ from typing import Optional
 
 from ..database import get_db
 from ..models.complaint import Complaint, ComplaintStatus
+from ..models.customer import Customer
+from ..models.notification import Notification, NotificationType
 from ..models.user import User
 from ..auth.jwt_handler import get_current_user
+from ..tools.email_tools import send_complaint_resolution_email
 
 router = APIRouter(prefix="/complaints", tags=["complaints"])
 
@@ -34,6 +37,28 @@ def update_complaint_status(
     complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
+
     complaint.status = status
+    email_sent = False
+
+    if status == ComplaintStatus.resolved:
+        customer = db.query(Customer).filter(Customer.id == complaint.customer_id).first()
+        if customer:
+            email_sent = send_complaint_resolution_email(customer, complaint)
+            notif = Notification(
+                type=NotificationType.complaint,
+                title="Complaint Resolved",
+                message=f"Complaint {complaint.reference} resolved. "
+                        + (f"Resolution email sent to {customer.email}." if email_sent else "No email on record."),
+                reference_id=complaint.id,
+                reference_type="complaint",
+            )
+            db.add(notif)
+
     db.commit()
-    return {"complaint_id": complaint_id, "status": complaint.status}
+    return {
+        "complaint_id": complaint_id,
+        "reference": complaint.reference,
+        "status": complaint.status,
+        "email_sent": email_sent,
+    }
