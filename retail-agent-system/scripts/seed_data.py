@@ -33,15 +33,41 @@ PRODUCTS_DATA = [
     ("Winter Jacket Men", "CLO-005", "Clothing", 8500, 5000, "Outfitters Wholesale"),
     ("Women's Hijab Premium", "CLO-006", "Clothing", 800, 350, "Hijab House"),
     ("Sports Shoes Nike", "CLO-007", "Clothing", 12000, 8000, "Nike Pakistan"),
-    # Groceries
-    ("Basmati Rice 5kg", "GRO-001", "Groceries", 1200, 900, "Rice Mills PK"),
-    ("Sunflower Oil 5L", "GRO-002", "Groceries", 2200, 1700, "Sufi Foods"),
-    ("Nestle Milk Powder 1kg", "GRO-003", "Groceries", 1800, 1400, "Nestle Pakistan"),
-    ("Whole Wheat Atta 10kg", "GRO-004", "Groceries", 1500, 1100, "Flour Mills"),
-    ("Tata Salt 1kg", "GRO-005", "Groceries", 150, 100, "Tata Distributor"),
-    ("Surf Excel 1kg", "GRO-006", "Groceries", 450, 300, "Unilever Pakistan"),
-    ("Colgate Toothpaste 200g", "GRO-007", "Groceries", 320, 200, "Colgate Palmolive"),
-    ("Dettol Soap 3pack", "GRO-008", "Groceries", 420, 280, "Reckitt Benckiser"),
+    # Groceries — Staples
+    ("Basmati Rice 5kg",            "GRO-001", "Groceries", 1200,  900,  "Rice Mills PK"),
+    ("Sunflower Oil 5L",            "GRO-002", "Groceries", 2200,  1700, "Sufi Foods"),
+    ("Nestle Milk Powder 1kg",      "GRO-003", "Groceries", 1800,  1400, "Nestle Pakistan"),
+    ("Whole Wheat Atta 10kg",       "GRO-004", "Groceries", 1500,  1100, "Flour Mills"),
+    ("Tata Salt 1kg",               "GRO-005", "Groceries", 150,   100,  "Tata Distributor"),
+    ("Surf Excel 1kg",              "GRO-006", "Groceries", 450,   300,  "Unilever Pakistan"),
+    ("Colgate Toothpaste 200g",     "GRO-007", "Groceries", 320,   200,  "Colgate Palmolive"),
+    ("Dettol Soap 3pack",           "GRO-008", "Groceries", 420,   280,  "Reckitt Benckiser"),
+    # Groceries — Daal & Pulses
+    ("Moong Daal 1kg",              "GRO-009", "Groceries", 380,   280,  "National Foods PK"),
+    ("Masoor Daal 1kg",             "GRO-010", "Groceries", 320,   230,  "National Foods PK"),
+    ("Chana Daal 1kg",              "GRO-011", "Groceries", 300,   210,  "National Foods PK"),
+    ("Kali Daal 1kg",               "GRO-012", "Groceries", 350,   250,  "National Foods PK"),
+    ("White Chickpeas 1kg",         "GRO-013", "Groceries", 420,   310,  "National Foods PK"),
+    # Groceries — Masala & Spices
+    ("National Biryani Masala 100g","GRO-014", "Groceries", 180,   110,  "National Foods PK"),
+    ("Shan Nihari Masala 60g",      "GRO-015", "Groceries", 120,   75,   "Shan Foods"),
+    ("Shan Karahi Masala 50g",      "GRO-016", "Groceries", 110,   70,   "Shan Foods"),
+    ("Shan Seekh Kabab Mix 50g",    "GRO-017", "Groceries", 130,   80,   "Shan Foods"),
+    ("Red Chilli Powder 200g",      "GRO-018", "Groceries", 160,   100,  "National Foods PK"),
+    ("Turmeric Powder 200g",        "GRO-019", "Groceries", 140,   90,   "National Foods PK"),
+    ("Garam Masala 100g",           "GRO-020", "Groceries", 200,   130,  "Shan Foods"),
+    ("Coriander Powder 200g",       "GRO-021", "Groceries", 130,   80,   "National Foods PK"),
+    ("Cumin Seeds 100g",            "GRO-022", "Groceries", 110,   70,   "National Foods PK"),
+    # Groceries — Pre-Cooked & Ready to Eat
+    ("Shan Haleem Mix 300g",        "GRO-023", "Groceries", 280,   180,  "Shan Foods"),
+    ("Knorr Noodles Chicken 66g",   "GRO-024", "Groceries", 60,    35,   "Unilever Pakistan"),
+    ("Indomie Instant Noodles 75g", "GRO-025", "Groceries", 55,    30,   "Shan Foods"),
+    ("National Tomato Ketchup 800g","GRO-026", "Groceries", 350,   230,  "National Foods PK"),
+    ("Ahmed Mango Pickle 400g",     "GRO-027", "Groceries", 280,   180,  "Ahmed Foods"),
+    ("Mian Bhai Papadum 200g",      "GRO-028", "Groceries", 150,   90,   "Ahmed Foods"),
+    # Groceries — Beverages & Dairy
+    ("Tapal Danedar Tea 450g",      "GRO-029", "Groceries", 650,   480,  "Tapal Tea"),
+    ("Lipton Yellow Label Tea 200g","GRO-030", "Groceries", 420,   300,  "Unilever Pakistan"),
     # Home & Kitchen
     ("Non-Stick Frying Pan", "HOM-001", "Home & Kitchen", 1800, 1000, "Kitchen Pro"),
     ("Pressure Cooker 5L", "HOM-002", "Home & Kitchen", 3500, 2200, "National Cookware"),
@@ -120,6 +146,10 @@ SUPPLIERS_DATA = [
     ("Ferozesons",            "ferozesons@gmail.com",         "+92-42-3945-6789", "Farhan Awan"),
     ("Xiaomi Pakistan",       "xiaomi@xiaomi.pk",             "+92-21-4345-6789", "Li Wei"),
     ("TP-Link Dealer",        "tplink@pkdealer.com",          "+92-21-4456-7890", "Zeeshan Haider"),
+    ("National Foods PK",     "orders@nationalfoods.com.pk",  "+92-21-3456-1111", "Rashid Memon"),
+    ("Shan Foods",            "orders@shanfoods.com",         "+92-21-3456-2222", "Asim Ghouri"),
+    ("Ahmed Foods",           "orders@ahmedfoods.pk",         "+92-21-3456-3333", "Tariq Ahmed"),
+    ("Tapal Tea",             "orders@tapal.com.pk",          "+92-21-3456-4444", "Farrukh Tapal"),
 ]
 
 CUSTOMER_NAMES = [
