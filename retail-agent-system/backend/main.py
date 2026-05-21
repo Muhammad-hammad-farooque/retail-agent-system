@@ -1,6 +1,12 @@
+import os
+import json
+import asyncio
+import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
+from openai import AsyncOpenAI
+from agents import set_default_openai_client, set_tracing_disabled, set_default_openai_api
 
 from .database import create_tables
 from .auth.auth_router import router as auth_router
@@ -16,6 +22,73 @@ from .api.notification_router import router as notification_router
 from .api.supplier_router import router as supplier_router
 
 load_dotenv()
+
+AI_MODEL = "gpt-4o-mini"
+
+
+class _RotatingKeyTransport(httpx.AsyncBaseTransport):
+    """Intercepts chat/completions requests, forces the model name, and
+    automatically rotates to the next API key on 429 rate limit errors."""
+
+    def __init__(self, model: str, api_keys: list[str]):
+        self._model = model
+        self._keys = [k for k in api_keys if k]
+        self._current_index = 0
+        self._lock = asyncio.Lock()
+        self._inner = httpx.AsyncHTTPTransport()
+
+    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+        if "chat/completions" not in str(request.url):
+            return await self._inner.handle_async_request(request)
+
+        body = json.loads(request.content)
+        body["model"] = self._model
+        new_content = json.dumps(body).encode()
+        headers = dict(request.headers)
+        headers["content-length"] = str(len(new_content))
+
+        response = None
+        for attempt in range(len(self._keys)):
+            key_index = (self._current_index + attempt) % len(self._keys)
+            headers["authorization"] = f"Bearer {self._keys[key_index]}"
+            req = httpx.Request(
+                method=request.method,
+                url=request.url,
+                headers=headers,
+                content=new_content,
+            )
+            response = await self._inner.handle_async_request(req)
+            if response.status_code != 429:
+                if attempt > 0:
+                    async with self._lock:
+                        self._current_index = key_index
+                    print(f"[Key Rotation] Switched to key #{key_index + 1} after rate limit.")
+                return response
+
+        # All keys exhausted — advance index for next request and return last response
+        async with self._lock:
+            self._current_index = (self._current_index + 1) % len(self._keys)
+        print("[Key Rotation] All keys rate limited. Will retry on next request.")
+        return response
+
+    async def aclose(self):
+        await self._inner.aclose()
+
+
+def _load_api_keys() -> list[str]:
+    """Read GITHUB_TOKEN_1, GITHUB_TOKEN_2, ... from env.
+    Falls back to GITHUB_TOKEN if numbered keys are not set."""
+    keys = []
+    for i in range(1, 11):
+        key = os.getenv(f"GITHUB_TOKEN_{i}")
+        if key:
+            keys.append(key)
+    if not keys:
+        single = os.getenv("GITHUB_TOKEN")
+        if single:
+            keys.append(single)
+    return keys
+
 
 app = FastAPI(
     title="Retail Agent System",
@@ -35,6 +108,18 @@ app.add_middleware(
 @app.on_event("startup")
 def startup():
     create_tables()
+    api_keys = _load_api_keys()
+    print(f"[Startup] Loaded {len(api_keys)} API key(s) for rotation.")
+    client = AsyncOpenAI(
+        base_url=os.getenv("GITHUB_BASE_URL", "https://models.inference.ai.azure.com"),
+        api_key=api_keys[0] if api_keys else "no-key",
+        http_client=httpx.AsyncClient(
+            transport=_RotatingKeyTransport(AI_MODEL, api_keys)
+        ),
+    )
+    set_default_openai_client(client)
+    set_default_openai_api("chat_completions")
+    set_tracing_disabled(True)
 
 
 app.include_router(auth_router)

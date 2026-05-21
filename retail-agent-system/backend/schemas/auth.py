@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-from backend.models.user import UserRole
+from ..models.user import UserRole
 
 
 class UserCreate(BaseModel):

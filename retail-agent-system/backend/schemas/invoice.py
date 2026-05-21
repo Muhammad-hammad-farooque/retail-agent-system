@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
-from backend.models.invoice import InvoiceStatus
+from ..models.invoice import InvoiceStatus
 
 
 class InvoiceItemOut(BaseModel):

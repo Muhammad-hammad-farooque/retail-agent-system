@@ -1,16 +1,22 @@
 import time
+from datetime import datetime
 from typing import Optional
+from agents import function_tool
 from ..database import SessionLocal
 from ..models.product import Product
 from ..models.supplier import Supplier
-from ..models.purchase_order import PurchaseOrder
+from ..models.purchase_order import PurchaseOrder, PurchaseOrderStatus
 from ..models.notification import Notification, NotificationType
+from ..tools.email_tools import send_vendor_email
+
+BUDGET_THRESHOLD = 100_000
 
 
 def _db():
     return SessionLocal()
 
 
+@function_tool
 def check_stock(product_id: int) -> str:
     """Check current stock level of a product by its ID."""
     db = _db()
@@ -30,6 +36,7 @@ def check_stock(product_id: int) -> str:
         db.close()
 
 
+@function_tool
 def update_stock(product_id: int, quantity_change: int) -> str:
     """Update stock level of a product. Use positive value to add stock, negative to deduct."""
     db = _db()
@@ -52,6 +59,7 @@ def update_stock(product_id: int, quantity_change: int) -> str:
         db.close()
 
 
+@function_tool
 def get_low_stock_alerts(threshold: Optional[int] = None) -> str:
     """Get all products that are at or below their reorder level (or a custom threshold)."""
     db = _db()
@@ -72,6 +80,7 @@ def get_low_stock_alerts(threshold: Optional[int] = None) -> str:
         db.close()
 
 
+@function_tool
 def add_product(
     name: str,
     sku: str,
@@ -101,18 +110,42 @@ def add_product(
         db.close()
 
 
+@function_tool
 def create_purchase_order(product_id: int, quantity: int) -> str:
-    """Create a purchase order request for restocking a product."""
+    """Create a purchase order for restocking a product. Auto-approves and emails vendor if total is under Rs.100,000. Requires manager approval above that."""
     db = _db()
     try:
         product = db.query(Product).filter(Product.id == product_id).first()
         if not product:
             return f"Product with ID {product_id} not found."
+
+        # Duplicate check — skip if open PO exists for this product today
+        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        existing = db.query(PurchaseOrder).filter(
+            PurchaseOrder.product_id == product_id,
+            PurchaseOrder.status.in_([
+                PurchaseOrderStatus.pending,
+                PurchaseOrderStatus.approved,
+                PurchaseOrderStatus.sent_to_vendor,
+            ]),
+            PurchaseOrder.created_at >= today_start,
+        ).first()
+        if existing:
+            return (
+                f"Purchase Order Already Exists (not duplicated):\n"
+                f"Order Number : {existing.order_number}\n"
+                f"Product      : {product.name}\n"
+                f"Quantity     : {existing.quantity} units\n"
+                f"Total Cost   : Rs.{existing.total_cost:,.0f}\n"
+                f"Status       : {existing.status.value.upper()}"
+            )
+
         total_cost = product.cost_price * quantity
         order_number = f"PO-{product_id}-{time.strftime('%Y%m%d%H%M%S')}"
 
-        # Auto-link supplier record by name match
+        # Auto-link supplier
         supplier_id = None
+        supplier_obj = None
         if product.supplier:
             sup = db.query(Supplier).filter(
                 Supplier.name.ilike(f"%{product.supplier}%"),
@@ -120,6 +153,7 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
             ).first()
             if sup:
                 supplier_id = sup.id
+                supplier_obj = sup
 
         po = PurchaseOrder(
             order_number=order_number,
@@ -131,25 +165,59 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
             supplier=product.supplier,
         )
         db.add(po)
-        notif = Notification(
-            type=NotificationType.purchase_order,
-            title="Purchase Order Created",
-            message=f"PO {order_number} for {product.name} — {quantity} units from {product.supplier or 'supplier'}",
-            reference_id=product_id,
-            reference_type="product",
-        )
-        db.add(notif)
-        db.commit()
-        return (
-            f"Purchase Order Created:\n"
-            f"Order Number: {order_number}\n"
-            f"Product: {product.name} (SKU: {product.sku})\n"
-            f"Supplier: {product.supplier or 'Not specified'}{' (linked)' if supplier_id else ''}\n"
-            f"Quantity to Order: {quantity} units\n"
-            f"Unit Cost: Rs.{product.cost_price:,.0f}\n"
-            f"Total Cost: Rs.{total_cost:,.0f}\n"
-            f"Status: PENDING APPROVAL"
-        )
+        db.flush()
+
+        if total_cost <= BUDGET_THRESHOLD:
+            # Auto-approve and email vendor
+            email_sent = False
+            if supplier_obj and supplier_obj.email:
+                email_sent = send_vendor_email(supplier_obj, po)
+                po.status = PurchaseOrderStatus.sent_to_vendor
+                approval_note = f"Auto-approved & emailed to {supplier_obj.name} ({supplier_obj.email})"
+            else:
+                po.status = PurchaseOrderStatus.approved
+                approval_note = "Auto-approved (no supplier email on record — send manually)"
+
+            db.add(Notification(
+                type=NotificationType.purchase_order,
+                title="Purchase Order Auto-Approved",
+                message=f"PO {order_number} for {product.name} — {approval_note}",
+                reference_id=product_id,
+                reference_type="product",
+            ))
+            db.commit()
+            return (
+                f"Purchase Order Created & Auto-Approved:\n"
+                f"Order Number : {order_number}\n"
+                f"Product      : {product.name} (SKU: {product.sku})\n"
+                f"Supplier     : {product.supplier or 'Not specified'}{' (linked)' if supplier_id else ''}\n"
+                f"Quantity     : {quantity} units\n"
+                f"Unit Cost    : Rs.{product.cost_price:,.0f}\n"
+                f"Total Cost   : Rs.{total_cost:,.0f}\n"
+                f"Status       : {po.status.value.upper()}\n"
+                f"Approval     : {approval_note}"
+            )
+        else:
+            # Over budget — leave pending for manager
+            db.add(Notification(
+                type=NotificationType.purchase_order,
+                title="Purchase Order Pending — Manager Approval Required",
+                message=f"PO {order_number} for Rs.{total_cost:,.0f} exceeds Rs.100,000. Manager approval required.",
+                reference_id=product_id,
+                reference_type="product",
+            ))
+            db.commit()
+            return (
+                f"Purchase Order Created — Manager Approval Required:\n"
+                f"Order Number : {order_number}\n"
+                f"Product      : {product.name} (SKU: {product.sku})\n"
+                f"Supplier     : {product.supplier or 'Not specified'}{' (linked)' if supplier_id else ''}\n"
+                f"Quantity     : {quantity} units\n"
+                f"Unit Cost    : Rs.{product.cost_price:,.0f}\n"
+                f"Total Cost   : Rs.{total_cost:,.0f}\n"
+                f"Status       : PENDING APPROVAL\n"
+                f"Note         : Total exceeds Rs.100,000 — go to Purchase Orders page to approve."
+            )
     except Exception as e:
         db.rollback()
         return f"Failed to create purchase order: {str(e)}"
@@ -157,6 +225,88 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
         db.close()
 
 
+@function_tool
+def search_product_by_name(name: str) -> str:
+    """Search products by name (partial, case-insensitive). Returns matching products with their IDs so you can use them in other tools."""
+    db = _db()
+    try:
+        products = db.query(Product).filter(
+            Product.name.ilike(f"%{name}%"),
+            Product.is_active == True,
+        ).all()
+        if not products:
+            return f"No active products found matching '{name}'."
+        lines = [f"Products matching '{name}' ({len(products)} found):"]
+        for p in products:
+            status = "LOW STOCK" if p.quantity <= p.reorder_level else "OK"
+            lines.append(
+                f"- ID: {p.id} | [{p.sku}] {p.name} | Category: {p.category} | "
+                f"Stock: {p.quantity} units | Reorder Level: {p.reorder_level} | "
+                f"Cost: Rs.{p.cost_price:,.0f} | Status: {status}"
+            )
+        return "\n".join(lines)
+    finally:
+        db.close()
+
+
+@function_tool
+def receive_purchase_order(product_id: int, quantity_received: int) -> str:
+    """Mark a purchase order as received and update product stock in one step.
+    Use this when the user says goods/stock/order has arrived or been received."""
+    db = _db()
+    try:
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            return f"Product with ID {product_id} not found."
+
+        # Only accept POs that have been sent to vendor — pending/approved are not eligible
+        po = (
+            db.query(PurchaseOrder)
+            .filter(
+                PurchaseOrder.product_id == product_id,
+                PurchaseOrder.status == PurchaseOrderStatus.sent_to_vendor,
+            )
+            .order_by(PurchaseOrder.created_at.desc())
+            .first()
+        )
+
+        if not po:
+            return (
+                f"No active Purchase Order found for {product.name} with status 'Sent to Vendor'.\n"
+                f"Goods can only be received against a purchase order that has already been sent to the vendor.\n"
+                f"Please create a purchase order first, wait for it to be sent to vendor, then mark it received."
+            )
+
+        # Update stock
+        old_qty = product.quantity
+        product.quantity = old_qty + quantity_received
+        po.status = PurchaseOrderStatus.received
+
+        notif = Notification(
+            type=NotificationType.purchase_order,
+            title="Stock Received",
+            message=f"Received {quantity_received} units of {product.name}. Stock: {old_qty} → {product.quantity}",
+            reference_id=product_id,
+            reference_type="product",
+        )
+        db.add(notif)
+        db.commit()
+
+        return (
+            f"Order Received — All Updated:\n"
+            f"Product       : {product.name} (SKU: {product.sku})\n"
+            f"Qty Received  : {quantity_received} units\n"
+            f"Stock         : {old_qty} → {product.quantity} units\n"
+            f"Purchase Order : {po.order_number} → RECEIVED"
+        )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to process received order: {str(e)}"
+    finally:
+        db.close()
+
+
+@function_tool
 def list_products_by_category(category: str) -> str:
     """List all active products in a given category."""
     db = _db()

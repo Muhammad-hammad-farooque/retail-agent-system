@@ -27,6 +27,31 @@ def get_all_purchase_orders(
     return query.order_by(PurchaseOrder.created_at.desc()).offset(skip).limit(limit).all()
 
 
+@router.get("/summary")
+def get_purchase_summary(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    from sqlalchemy import func
+    from datetime import datetime
+
+    now = datetime.utcnow()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    received = db.query(PurchaseOrder).filter(
+        PurchaseOrder.status == PurchaseOrderStatus.received
+    ).all()
+
+    month_received = [p for p in received if p.created_at and p.created_at >= month_start]
+
+    return {
+        "total_purchases": len(received),
+        "total_spent": sum(p.total_cost for p in received),
+        "this_month_purchases": len(month_received),
+        "this_month_spent": sum(p.total_cost for p in month_received),
+    }
+
+
 @router.get("/{po_id}")
 def get_purchase_order(
     po_id: int,

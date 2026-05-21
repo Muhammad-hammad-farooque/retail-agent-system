@@ -83,6 +83,8 @@ export const updateComplaintStatus = (id: number, status: string) =>
 export const getPurchaseOrders = (params?: { skip?: number; limit?: number; status?: string }) =>
   api.get('/purchase-orders', { params });
 
+export const getPurchaseSummary = () => api.get('/purchase-orders/summary');
+
 export const updatePOStatus = (id: number, status: string) =>
   api.patch(`/purchase-orders/${id}/status`, null, { params: { status } });
 

@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime, timedelta
 from sqlalchemy import func
+from agents import function_tool
 from ..database import SessionLocal
 from ..models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from ..models.product import Product
@@ -16,6 +17,7 @@ def _db():
     return SessionLocal()
 
 
+@function_tool
 def get_invoice(invoice_id: int) -> str:
     """Get full details of a specific invoice by ID."""
     db = _db()
@@ -44,6 +46,7 @@ def get_invoice(invoice_id: int) -> str:
         db.close()
 
 
+@function_tool
 def get_financial_summary(start_date: Optional[str] = None, end_date: Optional[str] = None) -> str:
     """Get financial summary for a date range (format: YYYY-MM-DD). Defaults to current month."""
     db = _db()
@@ -76,6 +79,7 @@ def get_financial_summary(start_date: Optional[str] = None, end_date: Optional[s
         db.close()
 
 
+@function_tool
 def calculate_profit_loss(days: int = 30) -> str:
     """Calculate profit and loss for the past N days."""
     db = _db()
@@ -98,6 +102,7 @@ def calculate_profit_loss(days: int = 30) -> str:
         db.close()
 
 
+@function_tool
 def get_revenue_by_category(days: int = 30) -> str:
     """Get revenue breakdown by product category for the past N days."""
     db = _db()
@@ -121,6 +126,7 @@ def get_revenue_by_category(days: int = 30) -> str:
         db.close()
 
 
+@function_tool
 def get_top_selling_products(limit: int = 10, days: int = 30) -> str:
     """Get top selling products by revenue for the past N days."""
     db = _db()
@@ -146,6 +152,42 @@ def get_top_selling_products(limit: int = 10, days: int = 30) -> str:
         db.close()
 
 
+@function_tool
+def get_purchase_expenses(days: int = 30) -> str:
+    """Get a summary of vendor purchases (received purchase orders) for the past N days."""
+    db = _db()
+    try:
+        since = datetime.utcnow() - timedelta(days=days)
+        pos = db.query(PurchaseOrder).filter(
+            PurchaseOrder.status == PurchaseOrderStatus.received,
+            PurchaseOrder.created_at >= since,
+        ).order_by(PurchaseOrder.created_at.desc()).all()
+
+        if not pos:
+            return f"No received purchase orders found in the past {days} days."
+
+        total_spent = sum(p.total_cost for p in pos)
+        lines = [
+            f"Vendor Purchases — Last {days} days:",
+            f"Total Orders Received: {len(pos)}",
+            f"Total Spent: Rs.{total_spent:,.0f}",
+            "",
+            "Details:",
+        ]
+        for p in pos:
+            product = db.query(Product).filter(Product.id == p.product_id).first()
+            name = product.name if product else f"Product #{p.product_id}"
+            date = p.created_at.strftime("%Y-%m-%d") if p.created_at else "N/A"
+            lines.append(
+                f"  {p.order_number} | {name} | Qty: {p.quantity} | "
+                f"Rs.{p.total_cost:,.0f} | Supplier: {p.supplier or 'N/A'} | {date}"
+            )
+        return "\n".join(lines)
+    finally:
+        db.close()
+
+
+@function_tool
 def approve_purchase_order(po_id: int) -> str:
     """Approve a pending purchase order. Automatically sends an email to the vendor if supplier email is on record."""
     db = _db()
@@ -199,6 +241,7 @@ def approve_purchase_order(po_id: int) -> str:
         db.close()
 
 
+@function_tool
 def reject_purchase_order(po_id: int, reason: str) -> str:
     """Reject a purchase order with a reason."""
     db = _db()

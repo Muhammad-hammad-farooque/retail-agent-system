@@ -10,9 +10,10 @@ from agents import (
 
 BUDGET_THRESHOLD = 100_000  # Rs.100,000
 
-# Matches: Rs.150,000 | Rs.1,50,000 | 150000 | 1,50,000 near order/cost keywords
+# Matches: Rs.150,000 | Rs.1,50,000 | PKR 150000 — prefix is REQUIRED to avoid
+# matching timestamps (e.g. PO-95-20260517123456) as monetary amounts.
 AMOUNT_PATTERN = re.compile(
-    r"(?:Rs\.?|PKR)?\s*([\d,]+(?:\.\d+)?)\s*(?:rupees?|pkr)?",
+    r"(?:Rs\.?|PKR)\s*([\d,]+(?:\.\d+)?)",
     re.IGNORECASE,
 )
 ORDER_KEYWORDS = {"total cost", "order", "purchase order", "net amount", "total amount"}

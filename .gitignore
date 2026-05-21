@@ -1,80 +1,112 @@
-# Python
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
 *.pyc
+*.so
 *.egg
 *.egg-info/
 dist/
 build/
 .eggs/
 *.whl
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.mypy_cache/
+.ruff_cache/
+.pytype/
+*.prof
 
-# Virtual environments
+# ── Virtual environments ──────────────────────────────────────────────────────
 .venv/
 venv/
 env/
 ENV/
 
-# Environment variables
+# ── Secrets & credentials (NEVER upload these) ────────────────────────────────
 .env
 .env.local
 .env.production
+.env.staging
+.env.test
+.env*.local
+*.pem
+*.key
+*.p12
+*.pfx
+*.cert
+*.secret
+secrets.json
+credentials.json
+service_account*.json
+token.json
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
 
-# Database
+# ── Database ──────────────────────────────────────────────────────────────────
 *.db
 *.sqlite
 *.sqlite3
-warehouse.db
-schema.sql
+*.dump
 *.sql
+warehouse.db
+backup/
 
-# ChromaDB
+# ── ChromaDB (vector store — large, auto-generated) ───────────────────────────
 chroma_db/
 
-# Pytest
+# ── Next.js / Node.js ─────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.turbo/
+.vercel/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ── Pytest / coverage ─────────────────────────────────────────────────────────
 .pytest_cache/
 test_retail.db
 htmlcov/
 .coverage
 coverage.xml
 
-# Logs
+# ── Logs ──────────────────────────────────────────────────────────────────────
 *.log
 logs/
 
-# IDE
+# ── IDE ───────────────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
+*.swp
+*.swo
+*~
 
-# OS
+# ── OS ────────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 desktop.ini
+$RECYCLE.BIN/
+*.lnk
 
-# Node.js (Phase 7 - Next.js)
-node_modules/
-.next/
-out/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# Docker
+# ── Docker ────────────────────────────────────────────────────────────────────
 *.env.docker
 .env.docker
 
-# Uploads / media
+# ── Uploads / temp ────────────────────────────────────────────────────────────
 uploads/
 media/
-
-# JWT / secrets
-*.pem
-*.key
-*.cert
+*.tmp
+*.bak

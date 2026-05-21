@@ -1,4 +1,10 @@
+# Inherits root .gitignore — this file adds retail-agent-system-specific rules
 
-node_modules/
+# One-time migration/fix scripts (contain DB logic, not for production repo)
+migrate_*.py
+fix_*.py
 
+# Frontend build output
 frontend/.next/
+frontend/node_modules/
+frontend/out/

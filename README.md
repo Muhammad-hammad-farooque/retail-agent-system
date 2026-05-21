@@ -1,7 +1,20 @@
 # Intelligent Retail Store Automation and Insight Generation System
 ### Powered by Agentic AI
 
-A production-ready multi-agent AI system for retail store management built with OpenAI Agents SDK, FastAPI, PostgreSQL, ChromaDB, and Next.js.
+An intelligent retail store automation platform powered by a multi-agent AI system. The backend is built with FastAPI and PostgreSQL; the frontend with Next.js 14 and Tailwind CSS. AI agents are orchestrated using the OpenAI Agents SDK (openai-agents) via GitHub Models (GPT-4o-mini).
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.11, FastAPI, SQLAlchemy, PostgreSQL |
+| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| AI / Agents | OpenAI Agents SDK (`openai-agents`), GitHub Models (`gpt-4o-mini`) |
+| Auth | JWT (HS256), bcrypt |
+| Email | SMTP via Gmail (smtplib) |
+| Database ORM | SQLAlchemy with Alembic-compatible models |
 
 ---
 
@@ -10,71 +23,56 @@ A production-ready multi-agent AI system for retail store management built with 
 ```
 retail-agent-system/
 ├── backend/
-│   ├── main.py                    # FastAPI entry point
-│   ├── database.py                # SQLAlchemy engine + session
-│   ├── agents/
-│   │   ├── triage_agent.py        # Main orchestrator
-│   │   ├── inventory_agent.py
-│   │   ├── accounting_agent.py
+│   ├── agents/               # AI agents
+│   │   ├── triage_agent.py       # Orchestrator — routes to sub-agents
+│   │   ├── inventory_agent.py    # Stock, products, purchase orders
+│   │   ├── accounting_agent.py   # Invoices, P&L, vendor purchases
 │   │   ├── customer_service_agent.py
 │   │   └── marketing_agent.py
-│   ├── tools/
-│   │   ├── inventory_tools.py
-│   │   ├── accounting_tools.py
-│   │   ├── customer_tools.py
-│   │   └── marketing_tools.py
-│   ├── guardrails/
-│   │   ├── input_guardrails.py
-│   │   └── output_guardrails.py
-│   ├── models/
-│   │   ├── product.py
-│   │   ├── invoice.py
-│   │   ├── customer.py
-│   │   ├── sale.py
-│   │   ├── user.py
-│   │   ├── complaint.py
-│   │   ├── purchase_order.py
-│   │   ├── promotion.py
-│   │   └── notification.py
-│   ├── rag/
-│   │   ├── pipeline.py            # ChromaDB RAG pipeline
-│   │   └── faq_documents.py       # 28 FAQ Q&A pairs
-│   ├── auth/
-│   │   ├── jwt_handler.py
-│   │   └── auth_router.py
-│   ├── api/
+│   ├── api/                  # FastAPI routers
 │   │   ├── agent_router.py
 │   │   ├── inventory_router.py
 │   │   ├── accounting_router.py
-│   │   ├── dashboard_router.py
+│   │   ├── purchase_order_router.py
 │   │   ├── customer_router.py
 │   │   ├── complaint_router.py
-│   │   ├── purchase_order_router.py
+│   │   ├── supplier_router.py
 │   │   ├── marketing_router.py
-│   │   └── notification_router.py
-│   └── schemas/
-│       ├── auth.py
-│       ├── product.py
-│       ├── invoice.py
-│       └── agent.py
-├── frontend/                      # Next.js 14 dashboard
+│   │   ├── notification_router.py
+│   │   └── dashboard_router.py
+│   ├── models/               # SQLAlchemy models
+│   ├── schemas/              # Pydantic schemas
+│   ├── tools/                # Agent function tools
+│   │   ├── inventory_tools.py
+│   │   ├── accounting_tools.py
+│   │   ├── customer_tools.py
+│   │   ├── marketing_tools.py
+│   │   └── email_tools.py
+│   ├── guardrails/
+│   │   ├── input_guardrails.py
+│   │   └── output_guardrails.py
+│   ├── auth/                 # JWT auth
+│   ├── rag/                  # FAQ / RAG pipeline
+│   ├── database.py
+│   └── main.py               # App entry point, AI client setup
+├── frontend/
 │   ├── app/
-│   │   ├── dashboard/page.tsx     # KPI cards + WebSocket alerts
-│   │   ├── inventory/page.tsx     # Product list + critical stock
-│   │   ├── accounting/page.tsx    # Invoices + financial summary
-│   │   ├── agent/page.tsx         # AI agent chat interface
-│   │   └── login/page.tsx         # JWT login
+│   │   ├── dashboard/        # KPI dashboard + live alerts
+│   │   ├── agent/            # AI chat interface
+│   │   ├── inventory/        # Product list and stock management
+│   │   ├── accounting/       # Sales invoices + vendor purchases (tabbed)
+│   │   ├── purchase-orders/  # PO list with approve/reject/receive actions
+│   │   ├── customers/        # Customer list and loyalty points
+│   │   ├── complaints/       # Complaint tracker
+│   │   ├── suppliers/        # Supplier management
+│   │   └── login/
 │   ├── components/
 │   │   ├── Navbar.tsx
-│   │   ├── KpiCard.tsx
-│   │   ├── AlertBanner.tsx        # Real-time WebSocket alerts
-│   │   ├── AgentChat.tsx
-│   │   └── ProductTable.tsx
-│   ├── lib/api.ts                 # Axios API client
-│   └── context/AuthContext.tsx    # JWT auth state
+│   │   └── AlertBanner.tsx   # Live WebSocket low-stock alerts
+│   └── lib/
+│       └── api.ts            # Axios API client
 ├── scripts/
-│   ├── seed_data.py               # Seed 50 products, 100 customers, 6 months sales
-│   └── ingest_faq.py              # Embed FAQ docs into ChromaDB
+│   └── seed_data.py          # Seed products, customers, suppliers, sales
 ├── tests/
 │   ├── conftest.py
 │   ├── test_guardrails.py
@@ -85,87 +83,165 @@ retail-agent-system/
 │   ├── evaluator.py
 │   ├── test_cases.py
 │   └── run_eval.py
-├── chroma_db/                     # ChromaDB persistent store
 ├── .env
-├── requirements.txt
-└── pytest.ini
+└── requirements.txt
 ```
 
 ---
 
-## Agents
+## Multi-Agent Architecture
 
-| Agent | Role | Tools |
-|-------|------|-------|
-| **Triage Agent** | Orchestrator — routes queries to specialist agents | Handoffs |
-| **Inventory Agent** | Stock management, reorder alerts, purchase orders | 6 tools |
-| **Accounting Agent** | Invoices, financial summaries, profit & loss | 5 tools |
-| **Customer Service Agent** | Customer info, complaints, loyalty points, FAQ (RAG) | 6 tools |
-| **Marketing Agent** | Promotions, pricing, sales trends, reports | 5 tools |
+```
+User Message
+     │
+     ▼
+Triage Agent  ──── input guardrails (content policy, retail scope)
+     │
+     ├──▶ Inventory Agent        (stock, products, purchase orders)
+     ├──▶ Accounting Agent       (invoices, P&L, vendor purchase expenses)
+     ├──▶ Customer Service Agent (complaints, loyalty, order history)
+     └──▶ Marketing Agent        (promotions, discounts, sales trends)
+               │
+               ▼
+         output guardrails  (budget limit check, negative quantity, PII masking)
+               │
+               ▼
+         Final Response
+```
 
-### Agent Handoff Flow
+Routing is done via the OpenAI Agents SDK `handoff()` mechanism. The Triage Agent never answers domain questions itself — it always delegates.
+
+---
+
+## Agents and Their Tools
+
+### Inventory Agent
+| Tool | Description |
+|------|-------------|
+| `search_product_by_name` | Search products by partial name |
+| `check_stock` | Check stock level of a product |
+| `update_stock` | Add or deduct stock units |
+| `get_low_stock_alerts` | List products at or below reorder level |
+| `add_product` | Add a new product to inventory |
+| `create_purchase_order` | Create a PO; auto-approves and emails vendor if under Rs.100,000 |
+| `receive_purchase_order` | Mark a PO as received and update stock in one step |
+| `list_products_by_category` | List all products in a category |
+
+### Accounting Agent
+| Tool | Description |
+|------|-------------|
+| `get_invoice` | Retrieve a specific sales invoice |
+| `get_financial_summary` | Revenue summary for a date range |
+| `calculate_profit_loss` | P&L report for past N days |
+| `get_revenue_by_category` | Revenue and profit by product category |
+| `get_top_selling_products` | Top sellers by revenue |
+| `get_purchase_expenses` | Vendor purchase history and total spent |
+| `approve_purchase_order` | Approve a pending PO (emails vendor automatically) |
+| `reject_purchase_order` | Reject a PO with a reason |
+
+### Customer Service Agent
+Handles: customer lookup, complaint creation and resolution, loyalty points, order history, returns and store policies. Sends resolution emails to customers when a complaint is resolved.
+
+### Marketing Agent
+Handles: promotions, discounts, price changes, sales trend reports, top products, and campaign recommendations.
+
+---
+
+## Purchase Order Workflow
+
 ```
-User Query → Triage Agent
-  ├── inventory keywords  → Inventory Agent
-  ├── finance keywords    → Accounting Agent
-  ├── customer keywords   → Customer Service Agent (RAG)
-  └── marketing keywords  → Marketing Agent
+Agent creates PO
+       │
+       ├── total ≤ Rs.100,000 ──▶ Auto-approved ──▶ Vendor email sent ──▶ Status: sent_to_vendor
+       │
+       └── total > Rs.100,000 ──▶ Status: pending ──▶ Manager approves via Purchase Orders page
+                                                              │
+                                                              ▼
+                                                    Vendor email sent ──▶ Status: sent_to_vendor
+                                                              │
+                                                              ▼
+                                               Agent confirms receipt ──▶ Status: received
+                                                    (stock updated)
 ```
+
+**Security rule:** `receive_purchase_order` only accepts POs with status `sent_to_vendor`. The agent is also instructed never to create a PO and immediately receive it in the same conversation turn.
 
 ---
 
 ## Guardrails
 
-**Input Guardrails** (before agent runs):
-1. **Scope check** — blocks non-retail queries
-2. **Harmful request check** — blocks hacking, fraud, data manipulation
-3. **Language check** — blocks abusive language (English + Urdu)
+### Input Guardrails
+- Blocks off-topic queries (non-retail content)
+- Blocks harmful or abusive language
 
-**Output Guardrails** (before response is sent):
-1. **Budget limit** — orders > Rs.100,000 flagged for manager approval
-2. **Negative quantity** — invalid stock values blocked
-3. **PII masking** — phone, address, email auto-masked
-
----
-
-## RAG Pipeline (Customer Service Agent)
-
-- **28 FAQ documents** covering: returns, payments, delivery, loyalty, warranty, complaints, discounts
-- Embedded using OpenAI `text-embedding-3-small`
-- Stored in **ChromaDB** (persistent, cosine similarity)
-- Top-3 relevant chunks injected into agent context on every query
+### Output Guardrails
+- **Budget limit check:** Flags any response mentioning a monetary amount > Rs.100,000 in an order context. Requires `Rs.` or `PKR` prefix to avoid false matches on timestamps.
+- **Negative quantity check:** Blocks responses containing negative stock values.
+- **PII masking:** Automatically masks Pakistani phone numbers, physical addresses, and partial emails before returning responses.
 
 ---
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
+### Auth
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/auth/login` | Get JWT token |
 | POST | `/auth/register` | Register new user |
-| POST | `/auth/login` | Login and get JWT token |
 | GET | `/auth/me` | Current user info |
-| POST | `/agent/task` | Main agent entry point |
-| GET | `/inventory/products` | List all products |
-| GET | `/inventory/critical` | Low stock items |
-| POST | `/inventory/products` | Add new product |
+
+### Agent
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/agent/task` | Run a query through the agent system |
+
+### Inventory
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/inventory/products` | List products |
+| POST | `/inventory/products` | Add product |
 | PATCH | `/inventory/products/{id}` | Update product |
+| GET | `/inventory/critical` | Products below reorder level |
+
+### Purchase Orders
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/purchase-orders` | List all POs (filterable by status) |
+| GET | `/purchase-orders/summary` | Total spent, order counts, this month |
+| GET | `/purchase-orders/{id}` | Get a single PO |
+| PATCH | `/purchase-orders/{id}/status` | Update PO status (approve/reject/receive) |
+
+### Accounting
+| Method | Path | Description |
+|--------|------|-------------|
 | GET | `/accounting/invoices` | List invoices |
-| GET | `/accounting/summary` | Financial summary |
-| GET | `/customers` | List all customers |
-| GET | `/customers/{id}` | Get customer by ID |
-| PATCH | `/customers/{id}/loyalty` | Update loyalty points |
-| GET | `/complaints` | List all complaints |
-| PATCH | `/complaints/{id}/status` | Update complaint status |
-| GET | `/purchase-orders` | List all purchase orders |
-| PATCH | `/purchase-orders/{id}/status` | Approve/reject PO |
-| GET | `/marketing/promotions` | List promotions |
-| GET | `/marketing/trends` | Sales trends |
-| GET | `/marketing/top-products` | Top products by revenue |
-| GET | `/notifications` | List all notifications |
-| GET | `/notifications/unread-count` | Unread count |
-| PATCH | `/notifications/mark-all-read` | Mark all as read |
-| GET | `/dashboard/kpis` | Dashboard KPI data |
-| WS | `/ws/alerts` | Real-time low stock alerts |
+| GET | `/accounting/summary` | Revenue, invoice counts, tax |
+
+### Other
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/dashboard/kpis` | KPI metrics for dashboard |
+| WS | `/ws/alerts` | WebSocket — live low-stock alerts every 30s |
+| GET | `/customers` | Customer list |
+| GET | `/complaints` | Complaint list |
+| GET | `/suppliers` | Supplier list |
+| GET | `/notifications` | Notification list |
+| PATCH | `/notifications/mark-all-read` | Mark all notifications read |
+
+---
+
+## Frontend Pages
+
+| Page | Path | Description |
+|------|------|-------------|
+| Dashboard | `/dashboard` | KPI cards, revenue chart, live low-stock alerts |
+| AI Agent | `/agent` | Chat interface to all agents |
+| Inventory | `/inventory` | Product list, stock levels, low-stock filter |
+| Accounting | `/accounting` | **Sales tab** (invoices, revenue summary) + **Purchases tab** (vendor purchase records, total spent) |
+| Purchase Orders | `/purchase-orders` | Full PO list with status filters, approve/reject/mark-received actions, auto-refreshes every 30s |
+| Customers | `/customers` | Customer list and loyalty points |
+| Complaints | `/complaints` | Complaint tracker with status updates |
+| Suppliers | `/suppliers` | Supplier management (add, edit, delete) |
 
 ---
 
@@ -176,78 +252,80 @@ User Query → Triage Agent
 | 1 | `users` | Authentication and role-based access |
 | 2 | `products` | Inventory management |
 | 3 | `customers` | Customer profiles and loyalty points |
-| 4 | `invoices` | Billing and payments |
-| 5 | `invoice_items` | Per-product invoice details |
+| 4 | `invoices` | Billing and payments (sales) |
+| 5 | `invoice_items` | Per-product invoice line items |
 | 6 | `sales` | Revenue and profit tracking |
 | 7 | `complaints` | Customer complaint history |
 | 8 | `purchase_orders` | Vendor restock orders |
-| 9 | `promotions` | Active discount promotions |
-| 10 | `notifications` | System event log |
+| 9 | `suppliers` | Supplier contacts and emails |
+| 10 | `promotions` | Active discount promotions |
+| 11 | `notifications` | System event log |
 
 ---
 
-## Tech Stack
+## Environment Variables
 
-- **Backend**: FastAPI, SQLAlchemy 2.0, PostgreSQL
-- **Agents**: OpenAI Agents SDK, GPT-4o
-- **RAG**: ChromaDB, OpenAI Embeddings
-- **Auth**: JWT (python-jose, bcrypt)
-- **Testing**: pytest, pytest-asyncio
-- **Frontend**: Next.js 14, Tailwind CSS, Axios, WebSocket
-- **Deployment**: Docker Compose (Phase 8)
+Create a `.env` file inside the `retail-agent-system/` directory:
+
+```env
+# Database
+DATABASE_URL=postgresql://postgres:PASSWORD@localhost/retail_db
+
+# Email (Gmail SMTP)
+SMTP_EMAIL=your@gmail.com
+SMTP_PASSWORD=your_app_password
+
+# JWT
+JWT_SECRET=your_secret_key
+JWT_ALGORITHM=HS256
+JWT_EXPIRE_MINUTES=30
+
+# GitHub Models API (GPT-4o-mini)
+# Add up to 10 keys — system rotates automatically on rate limit
+GITHUB_TOKEN_1=ghp_...
+GITHUB_TOKEN_2=ghp_...
+GITHUB_TOKEN_3=ghp_...
+GITHUB_BASE_URL=https://models.inference.ai.azure.com
+```
+
+To get a GitHub Models API key: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (classic). Free tier includes GPT-4o-mini access.
 
 ---
 
-## Getting Started
+## Setup and Running
 
-### 1. Install Dependencies
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+- PostgreSQL
+
+### Backend
+
 ```bash
 cd retail-agent-system
+
+# Install dependencies
 pip install -r requirements.txt
-pip install "pydantic[email]"
-```
 
-### 2. Configure Environment
-```bash
-# Edit .env with your credentials
-OPENAI_API_KEY=sk-your-key
-DATABASE_URL=postgresql://user:pass@localhost/retaildb
-JWT_SECRET=your-secret-key
-```
+# Create the database
+createdb retail_db
 
-### 3. Setup Database
-```bash
-# Create PostgreSQL database
-psql -U postgres -c "CREATE DATABASE retaildb;"
-
-# Seed synthetic data
-python scripts/seed_data.py
-```
-
-### 4. Ingest FAQ into ChromaDB
-```bash
-python scripts/ingest_faq.py
-```
-
-### 5. Run the Server
-```bash
+# Start the backend
 uvicorn backend.main:app --reload
-# Swagger docs: http://localhost:8000/docs
 ```
 
-### 6. Run the Frontend
+Backend runs at `http://localhost:8000`. Swagger docs at `http://localhost:8000/docs`.
+
+### Frontend
+
 ```bash
-cd frontend
+cd retail-agent-system/frontend
+
 npm install
 npm run dev
-# Dashboard: http://localhost:3000
 ```
 
-**Dashboard pages:**
-- `/dashboard` — KPI cards + real-time low-stock alerts (WebSocket)
-- `/inventory` — Product list with category filter and pagination
-- `/accounting` — Invoices with status filter + financial summary
-- `/agent` — AI chat interface (routes to all 5 agents)
+Frontend runs at `http://localhost:3000`.
 
 ---
 
@@ -261,35 +339,29 @@ python -m pytest tests/ -v
 python -m evaluation.run_eval
 ```
 
-**Test Results:** 40/40 passed | Evaluation: 21/21 — 100%
-
 ---
 
 ## Build Phases
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| 1 | PostgreSQL schema + seed data | ✅ Done |
-| 2 | FastAPI backend + JWT auth | ✅ Done |
-| 3 | All 5 agents with tools | ✅ Done |
-| 4 | Guardrails (input + output) | ✅ Done |
-| 5 | RAG pipeline with ChromaDB | ✅ Done |
-| 6 | Evaluation framework + tests | ✅ Done |
-| 7 | Next.js dashboard + WebSocket | ✅ Done |
-| 8 | Docker Compose + deployment | 🔄 Pending |
+| 1 | PostgreSQL schema + seed data | Done |
+| 2 | FastAPI backend + JWT auth | Done |
+| 3 | All 4 agents with tools | Done |
+| 4 | Guardrails (input + output + PII masking) | Done |
+| 5 | RAG pipeline (Customer Service FAQ) | Done |
+| 6 | Evaluation framework + tests | Done |
+| 7 | Next.js dashboard + WebSocket alerts | Done |
+| 8 | Purchase Orders + Supplier management | Done |
+| 9 | Accounting Purchases tab + vendor expense tracking | Done |
+| 10 | Docker Compose + deployment | Pending |
 
 ---
 
-## Environment Variables
+## Key Design Decisions
 
-```env
-OPENAI_API_KEY=
-DATABASE_URL=postgresql://user:pass@localhost/retaildb
-REDIS_URL=redis://localhost:6379
-CHROMA_PERSIST_DIR=./chroma_db
-SMTP_EMAIL=
-SMTP_PASSWORD=
-JWT_SECRET=
-JWT_ALGORITHM=HS256
-JWT_EXPIRE_MINUTES=30
-```
+- **API key rotation:** A custom `httpx.AsyncBaseTransport` (`_RotatingKeyTransport`) intercepts all chat/completions requests, forces the model name, and automatically cycles through up to 10 GitHub tokens when a 429 rate limit is hit.
+- **Auto-approval threshold:** Purchase orders under Rs.100,000 are auto-approved by the agent and a vendor email is sent immediately. Orders over Rs.100,000 stay pending for manager approval via the UI.
+- **Duplicate PO prevention:** `create_purchase_order` checks for an existing open PO for the same product on the same day before creating a new one.
+- **Strict receive validation:** `receive_purchase_order` only accepts POs with status `sent_to_vendor`. The agent is also instructed never to create and receive a PO in the same conversation turn.
+- **Vendor purchase accounting:** The Accounting page has a dedicated Purchases tab showing all received POs as expense records with a monthly summary. The Accounting Agent has a `get_purchase_expenses` tool to answer purchase-related financial questions.

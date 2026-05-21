@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime, timedelta
 from sqlalchemy import func
+from agents import function_tool
 from ..database import SessionLocal
 from ..models.product import Product
 from ..models.sale import Sale
@@ -12,6 +13,7 @@ def _db():
     return SessionLocal()
 
 
+@function_tool
 def get_sales_trends(days: int = 30, category: Optional[str] = None) -> str:
     """Get daily sales trends for the past N days, optionally filtered by category."""
     db = _db()
@@ -41,6 +43,7 @@ def get_sales_trends(days: int = 30, category: Optional[str] = None) -> str:
         db.close()
 
 
+@function_tool
 def get_top_products(limit: int = 5, days: int = 30) -> str:
     """Get top-performing products by revenue for marketing focus."""
     db = _db()
@@ -67,6 +70,7 @@ def get_top_products(limit: int = 5, days: int = 30) -> str:
         db.close()
 
 
+@function_tool
 def update_price(product_id: int, new_price: float) -> str:
     """Update the selling price of a product."""
     db = _db()
@@ -95,6 +99,7 @@ def update_price(product_id: int, new_price: float) -> str:
         db.close()
 
 
+@function_tool
 def create_promotion(product_id: int, discount_pct: float, start_date: str, end_date: str) -> str:
     """Create a promotional discount for a product (discount_pct: 0-100)."""
     db = _db()
@@ -144,6 +149,7 @@ def create_promotion(product_id: int, discount_pct: float, start_date: str, end_
         db.close()
 
 
+@function_tool
 def generate_marketing_report() -> str:
     """Generate a comprehensive marketing performance report."""
     db = _db()

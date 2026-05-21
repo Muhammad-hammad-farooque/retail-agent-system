@@ -105,5 +105,5 @@ async def websocket_alerts(ws: WebSocket, db: Session = Depends(get_db)):
                 }
                 await ws.send_json(alert)
             await asyncio.sleep(30)
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, Exception):
         manager.disconnect(ws)

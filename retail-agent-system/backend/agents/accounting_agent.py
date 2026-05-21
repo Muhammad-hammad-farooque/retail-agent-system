@@ -5,6 +5,7 @@ from ..tools.accounting_tools import (
     calculate_profit_loss,
     get_revenue_by_category,
     get_top_selling_products,
+    get_purchase_expenses,
     approve_purchase_order,
     reject_purchase_order,
 )
@@ -21,6 +22,7 @@ Responsibilities:
 - Break down revenue by product category
 - Identify top-selling products by revenue
 - Approve or reject purchase orders raised by the Inventory Agent
+- Report vendor purchase expenses (received POs) using get_purchase_expenses
 
 Rules:
 - All amounts are in PKR (Pakistani Rupees) — always prefix with Rs.
@@ -39,6 +41,7 @@ Provide clear financial summaries with totals, percentages, and actionable insig
         calculate_profit_loss,
         get_revenue_by_category,
         get_top_selling_products,
+        get_purchase_expenses,
         approve_purchase_order,
         reject_purchase_order,
     ],

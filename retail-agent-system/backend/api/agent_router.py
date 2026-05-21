@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from agents import Runner, InputGuardrailTripwireTriggered, OutputGuardrailTripwireTriggered
+import openai
 
 from ..database import get_db
 from ..schemas.agent import AgentTaskRequest, AgentTaskResponse
@@ -61,16 +62,34 @@ async def run_agent_task(
             success=True,
         )
 
-    except InputGuardrailTripwireTriggered as e:
+    except InputGuardrailTripwireTriggered:
         return AgentTaskResponse(
             response="Your request was blocked by our content policy. Please ensure your query is related to retail store operations and uses respectful language.",
             agent_used="input_guardrail",
             success=False,
         )
-    except OutputGuardrailTripwireTriggered as e:
+    except OutputGuardrailTripwireTriggered:
         return AgentTaskResponse(
             response="The agent response was blocked due to policy violations (invalid data or approval required).",
             agent_used="output_guardrail",
+            success=False,
+        )
+    except openai.RateLimitError as e:
+        return AgentTaskResponse(
+            response=f"Rate limit hit. Wait 1 minute and try again. Detail: {str(e)[:120]}",
+            agent_used="triage_agent",
+            success=False,
+        )
+    except openai.AuthenticationError:
+        return AgentTaskResponse(
+            response="Invalid API key. Please check your OPENCODE_API_KEY in .env.",
+            agent_used="triage_agent",
+            success=False,
+        )
+    except openai.APIConnectionError:
+        return AgentTaskResponse(
+            response="Cannot reach the AI service. Please check your internet connection and try again.",
+            agent_used="triage_agent",
             success=False,
         )
     except Exception as e:

@@ -18,6 +18,14 @@ interface PurchaseOrder {
 
 const STATUS_FILTERS = ['', 'pending', 'approved', 'rejected', 'sent_to_vendor', 'received'];
 
+const STATUS_DISPLAY: Record<string, string> = {
+  pending:        'Pending',
+  approved:       'Approved',
+  rejected:       'Rejected',
+  sent_to_vendor: 'Sent to Vendor',
+  received:       'Received',
+};
+
 const statusStyle: Record<string, string> = {
   pending:        'bg-yellow-50 text-yellow-700',
   approved:       'bg-blue-50 text-blue-700',
@@ -48,6 +56,12 @@ export default function PurchaseOrdersPage() {
   };
 
   useEffect(() => { load(); }, [statusFilter]);
+
+  // Auto-refresh every 30 seconds to pick up agent-driven status changes
+  useEffect(() => {
+    const interval = setInterval(load, 30_000);
+    return () => clearInterval(interval);
+  }, [statusFilter]);
 
   const handleAction = async (id: number, action: 'approved' | 'rejected' | 'received') => {
     if (action === 'rejected') {
@@ -95,7 +109,7 @@ export default function PurchaseOrdersPage() {
                 : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'
             }`}
           >
-            {s ? s.replace('_', ' ') : 'All'}
+            {s ? (STATUS_DISPLAY[s] || s) : 'All'}
           </button>
         ))}
       </div>
@@ -141,7 +155,7 @@ export default function PurchaseOrdersPage() {
                         statusStyle[o.status] || 'bg-gray-50 text-gray-600'
                       }`}>
                         {statusIcon[o.status]}
-                        {o.status.replace('_', ' ')}
+                        {STATUS_DISPLAY[o.status] || o.status}
                       </span>
                     </td>
                     <td className="py-3">

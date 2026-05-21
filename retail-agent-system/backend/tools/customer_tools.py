@@ -1,5 +1,6 @@
 import time
 from typing import Optional
+from agents import function_tool
 from ..database import SessionLocal
 from ..models.customer import Customer
 from ..models.invoice import Invoice, InvoiceStatus
@@ -12,6 +13,7 @@ def _db():
     return SessionLocal()
 
 
+@function_tool
 def get_customer_info(customer_id: int) -> str:
     """Get customer profile information by customer ID."""
     db = _db()
@@ -19,7 +21,6 @@ def get_customer_info(customer_id: int) -> str:
         customer = db.query(Customer).filter(Customer.id == customer_id).first()
         if not customer:
             return f"Customer with ID {customer_id} not found."
-        # Mask sensitive PII — guardrails will also enforce this
         phone_masked = f"****{customer.phone[-4:]}" if customer.phone and len(customer.phone) >= 4 else "N/A"
         address_masked = customer.address[:10] + "..." if customer.address else "N/A"
         return (
@@ -37,6 +38,7 @@ def get_customer_info(customer_id: int) -> str:
         db.close()
 
 
+@function_tool
 def get_order_history(customer_id: int, limit: int = 10) -> str:
     """Get recent order/invoice history for a customer."""
     db = _db()
@@ -66,6 +68,7 @@ def get_order_history(customer_id: int, limit: int = 10) -> str:
         db.close()
 
 
+@function_tool
 def update_loyalty_points(customer_id: int, points_change: int) -> str:
     """Add or deduct loyalty points for a customer. Use negative value to deduct."""
     db = _db()
@@ -85,6 +88,7 @@ def update_loyalty_points(customer_id: int, points_change: int) -> str:
         db.close()
 
 
+@function_tool
 def search_customer_by_name(name: str) -> str:
     """Search for customers by name (partial match)."""
     db = _db()
@@ -100,6 +104,7 @@ def search_customer_by_name(name: str) -> str:
         db.close()
 
 
+@function_tool
 def search_faq(query: str) -> str:
     """Search the store FAQ knowledge base for answers to customer questions. Uses semantic search."""
     chunks = rag_pipeline.search(query, top_k=3)
@@ -112,6 +117,7 @@ def search_faq(query: str) -> str:
     return "\n".join(lines)
 
 
+@function_tool
 def handle_complaint(customer_id: int, complaint: str) -> str:
     """Log and acknowledge a customer complaint."""
     db = _db()
