@@ -1,5 +1,5 @@
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from agents import function_tool
 from ..database import SessionLocal
@@ -120,7 +120,7 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
             return f"Product with ID {product_id} not found."
 
         # Duplicate check — skip if open PO exists for this product today
-        today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
         existing = db.query(PurchaseOrder).filter(
             PurchaseOrder.product_id == product_id,
             PurchaseOrder.status.in_([

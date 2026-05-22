@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from agents import function_tool
 from ..database import SessionLocal
@@ -51,7 +51,7 @@ def get_financial_summary(start_date: Optional[str] = None, end_date: Optional[s
     """Get financial summary for a date range (format: YYYY-MM-DD). Defaults to current month."""
     db = _db()
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         start = datetime.strptime(start_date, "%Y-%m-%d") if start_date else now.replace(day=1)
         end = datetime.strptime(end_date, "%Y-%m-%d") if end_date else now
 
@@ -84,7 +84,7 @@ def calculate_profit_loss(days: int = 30) -> str:
     """Calculate profit and loss for the past N days."""
     db = _db()
     try:
-        since = datetime.utcnow() - timedelta(days=days)
+        since = datetime.now(timezone.utc) - timedelta(days=days)
         sales = db.query(Sale).filter(Sale.sale_date >= since).all()
         total_revenue = sum(s.revenue for s in sales)
         total_profit = sum(s.profit for s in sales)
@@ -107,7 +107,7 @@ def get_revenue_by_category(days: int = 30) -> str:
     """Get revenue breakdown by product category for the past N days."""
     db = _db()
     try:
-        since = datetime.utcnow() - timedelta(days=days)
+        since = datetime.now(timezone.utc) - timedelta(days=days)
         results = (
             db.query(Sale.category, func.sum(Sale.revenue).label("revenue"), func.sum(Sale.profit).label("profit"))
             .filter(Sale.sale_date >= since)
@@ -131,7 +131,7 @@ def get_top_selling_products(limit: int = 10, days: int = 30) -> str:
     """Get top selling products by revenue for the past N days."""
     db = _db()
     try:
-        since = datetime.utcnow() - timedelta(days=days)
+        since = datetime.now(timezone.utc) - timedelta(days=days)
         results = (
             db.query(Sale.product_id, func.sum(Sale.revenue).label("revenue"), func.sum(Sale.quantity_sold).label("units"))
             .filter(Sale.sale_date >= since)
@@ -157,7 +157,7 @@ def get_purchase_expenses(days: int = 30) -> str:
     """Get a summary of vendor purchases (received purchase orders) for the past N days."""
     db = _db()
     try:
-        since = datetime.utcnow() - timedelta(days=days)
+        since = datetime.now(timezone.utc) - timedelta(days=days)
         pos = db.query(PurchaseOrder).filter(
             PurchaseOrder.status == PurchaseOrderStatus.received,
             PurchaseOrder.created_at >= since,

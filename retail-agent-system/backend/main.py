@@ -20,6 +20,7 @@ from .api.purchase_order_router import router as purchase_order_router
 from .api.marketing_router import router as marketing_router
 from .api.notification_router import router as notification_router
 from .api.supplier_router import router as supplier_router
+from .api.chat_router import router as chat_router
 
 load_dotenv()
 
@@ -133,6 +134,7 @@ app.include_router(purchase_order_router)
 app.include_router(marketing_router)
 app.include_router(notification_router)
 app.include_router(supplier_router)
+app.include_router(chat_router)
 
 
 @app.get("/health")

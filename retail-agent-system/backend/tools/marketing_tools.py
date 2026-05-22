@@ -1,5 +1,5 @@
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
 from agents import function_tool
 from ..database import SessionLocal
@@ -18,7 +18,7 @@ def get_sales_trends(days: int = 30, category: Optional[str] = None) -> str:
     """Get daily sales trends for the past N days, optionally filtered by category."""
     db = _db()
     try:
-        since = datetime.utcnow() - timedelta(days=days)
+        since = datetime.now(timezone.utc) - timedelta(days=days)
         query = db.query(
             func.date(Sale.sale_date).label("date"),
             func.sum(Sale.revenue).label("revenue"),
@@ -48,7 +48,7 @@ def get_top_products(limit: int = 5, days: int = 30) -> str:
     """Get top-performing products by revenue for marketing focus."""
     db = _db()
     try:
-        since = datetime.utcnow() - timedelta(days=days)
+        since = datetime.now(timezone.utc) - timedelta(days=days)
         results = (
             db.query(Sale.product_id, func.sum(Sale.revenue).label("revenue"), func.sum(Sale.quantity_sold).label("units"))
             .filter(Sale.sale_date >= since)
@@ -154,7 +154,7 @@ def generate_marketing_report() -> str:
     """Generate a comprehensive marketing performance report."""
     db = _db()
     try:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         last_30 = now - timedelta(days=30)
         last_7 = now - timedelta(days=7)
 

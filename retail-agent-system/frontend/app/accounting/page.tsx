@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getInvoices, getAccountingSummary, getPurchaseOrders, getPurchaseSummary } from '@/lib/api';
 import {
   DollarSign, Receipt, TrendingUp, RefreshCw,
-  CheckCircle, Clock, XCircle, ShoppingCart, PackageCheck, Banknote,
+  ShoppingCart, PackageCheck, Banknote,
 } from 'lucide-react';
 
 interface Invoice {
@@ -45,19 +45,6 @@ interface PurchaseSummary {
   this_month_spent: number;
 }
 
-const invoiceStatusIcon: Record<string, React.ReactNode> = {
-  paid:      <CheckCircle className="w-3.5 h-3.5 text-green-500" />,
-  pending:   <Clock className="w-3.5 h-3.5 text-yellow-500" />,
-  cancelled: <XCircle className="w-3.5 h-3.5 text-red-500" />,
-  refunded:  <XCircle className="w-3.5 h-3.5 text-gray-400" />,
-};
-
-const invoiceStatusColor: Record<string, string> = {
-  paid:      'bg-green-50 text-green-700',
-  pending:   'bg-yellow-50 text-yellow-700',
-  cancelled: 'bg-red-50 text-red-700',
-  refunded:  'bg-gray-50 text-gray-600',
-};
 
 type Tab = 'sales' | 'purchases';
 
@@ -67,7 +54,6 @@ export default function AccountingPage() {
   // Sales state
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [salesSummary, setSalesSummary] = useState<SalesSummary | null>(null);
-  const [statusFilter, setStatusFilter] = useState('');
   const [salesLoading, setSalesLoading] = useState(true);
 
   // Purchases state
@@ -78,7 +64,7 @@ export default function AccountingPage() {
   const loadSales = () => {
     setSalesLoading(true);
     Promise.all([
-      getInvoices(statusFilter ? { status: statusFilter } : {}),
+      getInvoices({}),
       getAccountingSummary(),
     ])
       .then(([iRes, sRes]) => {
@@ -109,7 +95,7 @@ export default function AccountingPage() {
       .finally(() => setPurchasesLoading(false));
   };
 
-  useEffect(() => { loadSales(); }, [statusFilter]);
+  useEffect(() => { loadSales(); }, []);
   useEffect(() => { if (tab === 'purchases') loadPurchases(); }, [tab]);
 
   return (
@@ -195,22 +181,6 @@ export default function AccountingPage() {
             </div>
           )}
 
-          <div className="flex gap-2 mb-5">
-            {['', 'paid', 'pending', 'cancelled', 'refunded'].map((s) => (
-              <button
-                key={s || 'all'}
-                onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
-                  statusFilter === s
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                {s || 'All'}
-              </button>
-            ))}
-          </div>
-
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             {salesLoading ? (
               <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
@@ -229,7 +199,6 @@ export default function AccountingPage() {
                       <th className="pb-3 pr-4">Customer ID</th>
                       <th className="pb-3 pr-4 text-right">Amount (Rs.)</th>
                       <th className="pb-3 pr-4 text-right">Tax (Rs.)</th>
-                      <th className="pb-3 pr-4">Status</th>
                       <th className="pb-3">Date</th>
                     </tr>
                   </thead>
@@ -243,14 +212,6 @@ export default function AccountingPage() {
                         </td>
                         <td className="py-3 pr-4 text-right text-gray-500">
                           {(inv.tax || 0).toLocaleString()}
-                        </td>
-                        <td className="py-3 pr-4">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                            invoiceStatusColor[inv.status] || 'bg-gray-50 text-gray-600'
-                          }`}>
-                            {invoiceStatusIcon[inv.status]}
-                            {inv.status}
-                          </span>
                         </td>
                         <td className="py-3 text-gray-500 text-xs">
                           {new Date(inv.created_at).toLocaleDateString()}

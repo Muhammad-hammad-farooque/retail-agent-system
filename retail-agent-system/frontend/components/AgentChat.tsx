@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { runAgentTask } from '@/lib/api';
+import { runAgentTask, getChatHistory, saveChatMessage } from '@/lib/api';
 import { Send, Bot, User, Loader2 } from 'lucide-react';
 
 interface Message {
@@ -36,6 +36,22 @@ export default function AgentChat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    getChatHistory()
+      .then((res) => {
+        if (res.data.length > 0) {
+          setMessages(
+            res.data.map((m: { role: 'user' | 'assistant'; content: string; created_at: string }) => ({
+              role: m.role,
+              content: m.content,
+              timestamp: new Date(m.created_at),
+            }))
+          );
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const send = async (query: string) => {
     if (!query.trim() || loading) return;
 
@@ -43,21 +59,26 @@ export default function AgentChat() {
       ...prev,
       { role: 'user', content: query, timestamp: new Date() },
     ]);
+    saveChatMessage('user', query).catch(() => {});
     setInput('');
     setLoading(true);
 
     try {
       const res = await runAgentTask(query);
       const data = res.data;
+      const assistantContent = data.response || data.message || JSON.stringify(data);
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: data.response || data.message || JSON.stringify(data),
+          content: assistantContent,
           timestamp: new Date(),
           error: !data.success,
         },
       ]);
+      if (data.success) {
+        saveChatMessage('assistant', assistantContent).catch(() => {});
+      }
     } catch (err: unknown) {
       const errorMessage =
         err && typeof err === 'object' && 'response' in err

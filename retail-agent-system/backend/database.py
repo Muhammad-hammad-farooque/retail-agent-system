@@ -27,4 +27,5 @@ def create_tables():
         Product, Invoice, InvoiceItem, Customer, Sale, User,
         Complaint, Supplier, PurchaseOrder, Promotion, Notification,
     )
+    from .models.chat_message import ChatMessage  # noqa: F401
     Base.metadata.create_all(bind=engine)

@@ -103,4 +103,9 @@ export const deleteSupplier = (id: number) => api.delete(`/suppliers/${id}`);
 export const runAgentTask = (query: string) =>
   api.post('/agent/task', { query });
 
+// ── Chat History ──────────────────────────────────────────────────────────────
+export const getChatHistory = () => api.get('/chat/history');
+export const saveChatMessage = (role: 'user' | 'assistant', content: string) =>
+  api.post('/chat/messages', { role, content });
+
 export default api;

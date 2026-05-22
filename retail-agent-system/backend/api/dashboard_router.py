@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import asyncio
 import json
 
@@ -40,7 +40,7 @@ manager = ConnectionManager()
 
 @router.get("/dashboard/kpis")
 def get_kpis(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    today = datetime.utcnow()
+    today = datetime.now(timezone.utc)
     month_start = today.replace(day=1, hour=0, minute=0, second=0)
     week_start = today - timedelta(days=7)
 
@@ -101,7 +101,7 @@ async def websocket_alerts(ws: WebSocket, db: Session = Depends(get_db)):
                         {"id": p.id, "name": p.name, "quantity": p.quantity, "reorder_level": p.reorder_level}
                         for p in low_stock_items[:5]
                     ],
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
                 await ws.send_json(alert)
             await asyncio.sleep(30)

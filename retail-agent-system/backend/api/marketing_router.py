@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from ..database import get_db
 from ..models.promotion import Promotion, PromotionStatus
@@ -48,7 +48,7 @@ def get_sales_trends(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
     query = db.query(
         func.date(Sale.sale_date).label("date"),
         func.sum(Sale.revenue).label("revenue"),
@@ -67,7 +67,7 @@ def get_top_products(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    since = datetime.utcnow() - timedelta(days=days)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
     results = (
         db.query(Sale.product_id, func.sum(Sale.revenue).label("revenue"), func.sum(Sale.quantity_sold).label("units"))
         .filter(Sale.sale_date >= since)

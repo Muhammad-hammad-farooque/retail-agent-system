@@ -32,10 +32,9 @@ def get_purchase_summary(
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    from sqlalchemy import func
-    from datetime import datetime
+    from datetime import datetime, timezone
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
 
     received = db.query(PurchaseOrder).filter(

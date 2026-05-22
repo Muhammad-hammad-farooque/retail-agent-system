@@ -275,10 +275,7 @@ def seed_database():
                     discount=discount,
                     tax=tax,
                     net_amount=net,
-                    status=random.choices(
-                        [InvoiceStatus.paid, InvoiceStatus.pending, InvoiceStatus.cancelled],
-                        weights=[85, 10, 5]
-                    )[0],
+                    status=InvoiceStatus.paid,
                     payment_method=random.choice(["Cash", "Card", "EasyPaisa", "JazzCash", "Bank Transfer"]),
                     created_at=current,
                 )

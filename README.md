@@ -194,6 +194,8 @@ Agent creates PO
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | `/agent/task` | Run a query through the agent system |
+| GET | `/chat/history` | Fetch all chat messages for the current user |
+| POST | `/chat/messages` | Save a single chat message (role + content) |
 
 ### Inventory
 | Method | Path | Description |
@@ -235,7 +237,7 @@ Agent creates PO
 | Page | Path | Description |
 |------|------|-------------|
 | Dashboard | `/dashboard` | KPI cards, revenue chart, live low-stock alerts |
-| AI Agent | `/agent` | Chat interface to all agents |
+| AI Agent | `/agent` | Chat interface to all agents — history persists across navigation and refresh |
 | Inventory | `/inventory` | Product list, stock levels, low-stock filter |
 | Accounting | `/accounting` | **Sales tab** (invoices, revenue summary) + **Purchases tab** (vendor purchase records, total spent) |
 | Purchase Orders | `/purchase-orders` | Full PO list with status filters, approve/reject/mark-received actions, auto-refreshes every 30s |
@@ -260,6 +262,7 @@ Agent creates PO
 | 9 | `suppliers` | Supplier contacts and emails |
 | 10 | `promotions` | Active discount promotions |
 | 11 | `notifications` | System event log |
+| 12 | `chat_messages` | Persisted AI agent chat history per user |
 
 ---
 
@@ -354,7 +357,8 @@ python -m evaluation.run_eval
 | 7 | Next.js dashboard + WebSocket alerts | Done |
 | 8 | Purchase Orders + Supplier management | Done |
 | 9 | Accounting Purchases tab + vendor expense tracking | Done |
-| 10 | Docker Compose + deployment | Pending |
+| 10 | AI Agent chat history persistence (PostgreSQL) | Done |
+| 11 | Docker Compose + deployment | Pending |
 
 ---
 
@@ -365,3 +369,5 @@ python -m evaluation.run_eval
 - **Duplicate PO prevention:** `create_purchase_order` checks for an existing open PO for the same product on the same day before creating a new one.
 - **Strict receive validation:** `receive_purchase_order` only accepts POs with status `sent_to_vendor`. The agent is also instructed never to create and receive a PO in the same conversation turn.
 - **Vendor purchase accounting:** The Accounting page has a dedicated Purchases tab showing all received POs as expense records with a monthly summary. The Accounting Agent has a `get_purchase_expenses` tool to answer purchase-related financial questions.
+- **Persistent chat history:** Every user and assistant message is saved to the `chat_messages` table immediately. On page load, the AI Agent page fetches the full conversation history from the database — history survives navigation, refresh, and device switches. Error messages (guardrail blocks, network failures) are intentionally not persisted.
+- **Timezone-aware datetimes:** All datetime comparisons use `datetime.now(timezone.utc)` throughout the backend to correctly compare against PostgreSQL `timestamptz` columns.
