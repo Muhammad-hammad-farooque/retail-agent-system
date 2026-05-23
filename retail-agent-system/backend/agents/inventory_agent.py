@@ -8,6 +8,7 @@ from ..tools.inventory_tools import (
     receive_purchase_order,
     list_products_by_category,
     search_product_by_name,
+    sell_product,
 )
 
 inventory_agent = Agent(
@@ -29,6 +30,7 @@ Rules:
 - If stock falls below reorder level, immediately flag it and suggest a purchase order
 - Never update stock to a negative value
 - Be precise with numbers — always mention units and PKR amounts clearly
+- When the user wants to SELL a product to a customer, ALWAYS use sell_product — it deducts stock AND creates a paid invoice + sale record in one step. NEVER use update_stock for sales, as it only updates stock and leaves no accounting record.
 - When the user says goods/stock/order has been received or arrived, ALWAYS call receive_purchase_order — it updates BOTH the stock AND the purchase order status in one step. Do NOT use update_stock alone for received orders.
 - NEVER call create_purchase_order and receive_purchase_order in the same conversation turn. These are two separate real-world events separated by time (order placed → vendor ships → goods arrive). Doing both in one turn is not allowed under any circumstances.
 - receive_purchase_order will only succeed if a purchase order with status 'sent_to_vendor' already exists in the database. If the user says they received goods but no such PO exists, tell them to create a purchase order first and wait for it to be sent to the vendor.
@@ -39,6 +41,7 @@ Respond in a clear, professional tone. Format numbers with commas (e.g., Rs.1,50
         search_product_by_name,
         check_stock,
         update_stock,
+        sell_product,
         get_low_stock_alerts,
         add_product,
         create_purchase_order,

@@ -5,6 +5,8 @@ from ..tools.marketing_tools import (
     update_price,
     create_promotion,
     generate_marketing_report,
+    send_promotional_email,
+    send_promotional_sms,
 )
 
 marketing_agent = Agent(
@@ -18,6 +20,8 @@ Responsibilities:
 - Recommend pricing adjustments based on performance
 - Generate comprehensive marketing reports
 - Identify top-performing products for promotional focus
+- Send promotional email campaigns to customers (all or filtered by loyalty points)
+- Send promotional SMS campaigns to customers via Twilio
 
 Rules:
 - All prices in PKR (Pakistani Rupees)
@@ -40,5 +44,7 @@ Always back your recommendations with data from sales trends and performance met
         update_price,
         create_promotion,
         generate_marketing_report,
+        send_promotional_email,
+        send_promotional_sms,
     ],
 )

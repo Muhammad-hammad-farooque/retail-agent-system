@@ -4,6 +4,30 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
+def _smtp_credentials():
+    return os.getenv("SMTP_EMAIL"), os.getenv("SMTP_PASSWORD")
+
+
+def send_single_email(to_email: str, subject: str, body: str) -> bool:
+    """Send a plain-text email to a single recipient."""
+    smtp_email, smtp_password = _smtp_credentials()
+    if not smtp_email or not smtp_password:
+        return False
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = smtp_email
+    msg["To"] = to_email
+    msg.attach(MIMEText(body, "plain"))
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(smtp_email, smtp_password)
+            server.sendmail(smtp_email, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"[Email Error] {e}")
+        return False
+
+
 def send_vendor_email(supplier, po) -> bool:
     """Send a purchase order email to the vendor/supplier."""
     smtp_email = os.getenv("SMTP_EMAIL")

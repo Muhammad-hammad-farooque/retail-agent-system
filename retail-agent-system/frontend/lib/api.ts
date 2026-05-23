@@ -44,6 +44,14 @@ export const getMe = () => api.get('/auth/me');
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 export const getKpis = () => api.get('/dashboard/kpis');
+export const getSalesToday = () => api.get('/dashboard/sales-today');
+export const getDailyRevenue = (days = 7) => api.get('/dashboard/daily-revenue', { params: { days } });
+export const getRecentTransactions = (payment_method?: string) =>
+  api.get('/dashboard/recent-transactions', { params: payment_method ? { payment_method } : {} });
+export const getCategoryRevenue = () => api.get('/dashboard/category-revenue');
+export const getTopProducts = (period: 'today' | 'week' | 'month' = 'week') =>
+  api.get('/dashboard/top-products', { params: { period } });
+export const getProfitSummary = () => api.get('/dashboard/profit-summary');
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
 export const getProducts = (params?: { skip?: number; limit?: number; category?: string }) =>

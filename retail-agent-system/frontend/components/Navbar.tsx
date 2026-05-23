@@ -5,11 +5,12 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard, Package, Receipt, Bot, LogOut, Store,
-  Users, MessageCircleWarning, ClipboardList, Truck,
+  Users, MessageCircleWarning, ClipboardList, Truck, TrendingUp,
 } from 'lucide-react';
 
 const nav = [
   { href: '/dashboard',       label: 'Dashboard',       icon: LayoutDashboard },
+  { href: '/sales',           label: 'Sales',            icon: TrendingUp },
   { href: '/inventory',       label: 'Inventory',        icon: Package },
   { href: '/accounting',      label: 'Accounting',       icon: Receipt },
   { href: '/agent',           label: 'AI Agent',         icon: Bot },

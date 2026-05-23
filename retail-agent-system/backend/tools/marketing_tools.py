@@ -1,3 +1,4 @@
+import os
 from typing import Optional
 from datetime import datetime, timedelta, timezone
 from sqlalchemy import func
@@ -6,7 +7,9 @@ from ..database import SessionLocal
 from ..models.product import Product
 from ..models.sale import Sale
 from ..models.promotion import Promotion
+from ..models.customer import Customer
 from ..models.notification import Notification, NotificationType
+from ..tools.email_tools import send_single_email
 
 
 def _db():
@@ -145,6 +148,118 @@ def create_promotion(product_id: int, discount_pct: float, start_date: str, end_
     except Exception as e:
         db.rollback()
         return f"Failed to create promotion: {str(e)}"
+    finally:
+        db.close()
+
+
+@function_tool
+def send_promotional_email(subject: str, message: str, min_loyalty_points: int = 0) -> str:
+    """Send a promotional email to customers. Optionally filter by minimum loyalty points (e.g. 500 for VIP customers only). Use 0 to send to all customers."""
+    db = _db()
+    try:
+        customers = db.query(Customer).filter(
+            Customer.is_active == True,
+            Customer.email != None,
+            Customer.loyalty_points >= min_loyalty_points,
+        ).all()
+
+        if not customers:
+            return f"No customers found with loyalty points >= {min_loyalty_points}."
+
+        sent = 0
+        failed = 0
+        for customer in customers:
+            personalized_body = f"Dear {customer.name},\n\n{message}\n\nYour Loyalty Points: {customer.loyalty_points}\n\nRegards,\nRetail Store Team"
+            if send_single_email(customer.email, subject, personalized_body):
+                sent += 1
+            else:
+                failed += 1
+
+        db.add(Notification(
+            type=NotificationType.promotion,
+            title="Promotional Email Campaign Sent",
+            message=f"Email '{subject}' sent to {sent} customers (min loyalty: {min_loyalty_points} pts). Failed: {failed}.",
+            reference_id=None,
+            reference_type="marketing",
+        ))
+        db.commit()
+
+        return (
+            f"Promotional Email Campaign:\n"
+            f"Subject        : {subject}\n"
+            f"Target Filter  : Loyalty Points >= {min_loyalty_points}\n"
+            f"Total Customers: {len(customers)}\n"
+            f"Emails Sent    : {sent}\n"
+            f"Failed         : {failed}\n"
+            f"Status         : {'SUCCESS' if failed == 0 else 'PARTIAL'}"
+        )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to send promotional emails: {str(e)}"
+    finally:
+        db.close()
+
+
+@function_tool
+def send_promotional_sms(message: str, min_loyalty_points: int = 0) -> str:
+    """Send a promotional SMS to customers via Twilio. Optionally filter by minimum loyalty points. Use 0 to send to all customers."""
+    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    from_number = os.getenv("TWILIO_PHONE_NUMBER")
+
+    if not account_sid or not auth_token or not from_number:
+        return "Twilio credentials not configured. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER to your .env file."
+
+    try:
+        from twilio.rest import Client
+        client = Client(account_sid, auth_token)
+    except ImportError:
+        return "Twilio package not installed. Run: pip install twilio"
+
+    db = _db()
+    try:
+        customers = db.query(Customer).filter(
+            Customer.is_active == True,
+            Customer.phone != None,
+            Customer.loyalty_points >= min_loyalty_points,
+        ).all()
+
+        if not customers:
+            return f"No customers found with phone numbers and loyalty points >= {min_loyalty_points}."
+
+        sent = 0
+        failed = 0
+        for customer in customers:
+            try:
+                client.messages.create(
+                    body=f"Hi {customer.name}! {message}",
+                    from_=from_number,
+                    to=customer.phone,
+                )
+                sent += 1
+            except Exception:
+                failed += 1
+
+        db.add(Notification(
+            type=NotificationType.promotion,
+            title="Promotional SMS Campaign Sent",
+            message=f"SMS sent to {sent} customers (min loyalty: {min_loyalty_points} pts). Failed: {failed}.",
+            reference_id=None,
+            reference_type="marketing",
+        ))
+        db.commit()
+
+        return (
+            f"Promotional SMS Campaign:\n"
+            f"Target Filter  : Loyalty Points >= {min_loyalty_points}\n"
+            f"Total Customers: {len(customers)}\n"
+            f"SMS Sent       : {sent}\n"
+            f"Failed         : {failed}\n"
+            f"Status         : {'SUCCESS' if failed == 0 else 'PARTIAL'}"
+        )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to send promotional SMS: {str(e)}"
     finally:
         db.close()
 

@@ -6,6 +6,8 @@ from ..database import SessionLocal
 from ..models.product import Product
 from ..models.supplier import Supplier
 from ..models.purchase_order import PurchaseOrder, PurchaseOrderStatus
+from ..models.invoice import Invoice, InvoiceItem, InvoiceStatus
+from ..models.sale import Sale
 from ..models.notification import Notification, NotificationType
 from ..tools.email_tools import send_vendor_email
 
@@ -302,6 +304,96 @@ def receive_purchase_order(product_id: int, quantity_received: int) -> str:
     except Exception as e:
         db.rollback()
         return f"Failed to process received order: {str(e)}"
+    finally:
+        db.close()
+
+
+@function_tool
+def sell_product(
+    product_id: int,
+    quantity: int,
+    payment_method: str = "Cash",
+    customer_id: Optional[int] = None,
+) -> str:
+    """Process a sale: deducts stock and creates a paid invoice + sale record.
+    Payment methods: Cash, Card, EasyPaisa, JazzCash, Bank Transfer."""
+    db = _db()
+    try:
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            return f"Product with ID {product_id} not found."
+        if product.quantity < quantity:
+            return (
+                f"Insufficient stock. Only {product.quantity} units of {product.name} available. "
+                f"Cannot sell {quantity} units."
+            )
+
+        # Deduct stock
+        old_qty = product.quantity
+        product.quantity = old_qty - quantity
+
+        # Calculate amounts (17% GST)
+        total_amount = product.price * quantity
+        tax = round(total_amount * 0.17, 2)
+        net_amount = round(total_amount + tax, 2)
+        profit = round((product.price - product.cost_price) * quantity, 2)
+
+        # Create Invoice
+        invoice_number = f"INV-{time.strftime('%Y%m%d%H%M%S')}-{product_id}"
+        invoice = Invoice(
+            invoice_number=invoice_number,
+            customer_id=customer_id,
+            total_amount=round(total_amount, 2),
+            discount=0.0,
+            tax=tax,
+            net_amount=net_amount,
+            status=InvoiceStatus.paid,
+            payment_method=payment_method,
+        )
+        db.add(invoice)
+        db.flush()
+
+        # Create InvoiceItem
+        db.add(InvoiceItem(
+            invoice_id=invoice.id,
+            product_id=product_id,
+            quantity=quantity,
+            unit_price=product.price,
+            subtotal=round(total_amount, 2),
+        ))
+
+        # Create Sale record (for accounting/reporting)
+        db.add(Sale(
+            product_id=product_id,
+            quantity_sold=quantity,
+            revenue=round(total_amount, 2),
+            profit=profit,
+            category=product.category,
+        ))
+
+        db.commit()
+
+        low_stock_warning = ""
+        if product.quantity <= product.reorder_level:
+            low_stock_warning = f"\nWARNING: Stock is now low ({product.quantity} units). Consider creating a purchase order."
+
+        return (
+            f"Sale Processed Successfully:\n"
+            f"Invoice       : {invoice_number}\n"
+            f"Product       : {product.name} (SKU: {product.sku})\n"
+            f"Quantity Sold : {quantity} units\n"
+            f"Unit Price    : Rs.{product.price:,.0f}\n"
+            f"Total Amount  : Rs.{total_amount:,.0f}\n"
+            f"Tax (17% GST) : Rs.{tax:,.0f}\n"
+            f"Net Amount    : Rs.{net_amount:,.0f}\n"
+            f"Payment       : {payment_method}\n"
+            f"Stock         : {old_qty} → {product.quantity} units\n"
+            f"Status        : PAID"
+            f"{low_stock_warning}"
+        )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to process sale: {str(e)}"
     finally:
         db.close()
 

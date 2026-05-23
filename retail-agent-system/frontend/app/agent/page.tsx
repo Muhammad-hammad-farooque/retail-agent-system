@@ -1,5 +1,5 @@
 import AgentChat from '@/components/AgentChat';
-import { Bot, Zap } from 'lucide-react';
+import { Bot } from 'lucide-react';
 
 export default function AgentPage() {
   return (
@@ -12,20 +12,8 @@ export default function AgentPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">AI Agent</h1>
-            <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-              <Zap className="w-3 h-3" />
-              Powered by OpenAI GPT-4o · 5 specialist agents
-            </p>
+            <p className="text-xs text-gray-500 mt-0.5">Intelligent Retail System</p>
           </div>
-        </div>
-
-        <div className="mt-4 flex gap-6 text-xs text-gray-500">
-          {['Inventory', 'Accounting', 'Customer Service', 'Marketing'].map((a) => (
-            <span key={a} className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
-              {a} Agent
-            </span>
-          ))}
         </div>
       </div>
 

@@ -123,6 +123,7 @@ Routing is done via the OpenAI Agents SDK `handoff()` mechanism. The Triage Agen
 | `update_stock` | Add or deduct stock units |
 | `get_low_stock_alerts` | List products at or below reorder level |
 | `add_product` | Add a new product to inventory |
+| `sell_product` | Process a customer sale: deducts stock, creates paid invoice + sale record atomically |
 | `create_purchase_order` | Create a PO; auto-approves and emails vendor if under Rs.100,000 |
 | `receive_purchase_order` | Mark a PO as received and update stock in one step |
 | `list_products_by_category` | List all products in a category |
@@ -143,7 +144,12 @@ Routing is done via the OpenAI Agents SDK `handoff()` mechanism. The Triage Agen
 Handles: customer lookup, complaint creation and resolution, loyalty points, order history, returns and store policies. Sends resolution emails to customers when a complaint is resolved.
 
 ### Marketing Agent
-Handles: promotions, discounts, price changes, sales trend reports, top products, and campaign recommendations.
+| Tool | Description |
+|------|-------------|
+| `send_promotional_email` | Send a promotional email to all customers (or filtered by loyalty points) via Gmail SMTP |
+| `send_promotional_sms` | Send a promotional SMS to all customers (or filtered by loyalty points) via Twilio |
+
+Also handles: promotions, discounts, price changes, sales trend reports, top products, and campaign recommendations.
 
 ---
 
@@ -219,11 +225,21 @@ Agent creates PO
 | GET | `/accounting/invoices` | List invoices |
 | GET | `/accounting/summary` | Revenue, invoice counts, tax |
 
+### Dashboard
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/dashboard/kpis` | KPI metrics (total products, revenue, customers, invoices) |
+| GET | `/dashboard/sales-today` | Today's invoice count and revenue |
+| GET | `/dashboard/daily-revenue?days=7` | Revenue per day for last N days (7, 14, or 30) |
+| GET | `/dashboard/recent-transactions?payment_method=Cash` | Last 10 paid invoices, filterable by payment method |
+| GET | `/dashboard/category-revenue` | Revenue and profit grouped by product category |
+| GET | `/dashboard/top-products?period=week` | Top selling products by revenue (today / week / month) |
+| GET | `/dashboard/profit-summary` | Today's profit, avg order value, payment method breakdown |
+| WS | `/ws/alerts` | WebSocket — live low-stock alerts every 30s |
+
 ### Other
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/dashboard/kpis` | KPI metrics for dashboard |
-| WS | `/ws/alerts` | WebSocket — live low-stock alerts every 30s |
 | GET | `/customers` | Customer list |
 | GET | `/complaints` | Complaint list |
 | GET | `/suppliers` | Supplier list |
@@ -237,6 +253,7 @@ Agent creates PO
 | Page | Path | Description |
 |------|------|-------------|
 | Dashboard | `/dashboard` | KPI cards, revenue chart, live low-stock alerts |
+| Sales | `/sales` | Live sales dashboard — 6 KPI cards, daily revenue chart (7/14/30 day), payment method pie, category revenue, top products by period, transactions table with payment filter. Silent background refresh every 30s. |
 | AI Agent | `/agent` | Chat interface to all agents — history persists across navigation and refresh |
 | Inventory | `/inventory` | Product list, stock levels, low-stock filter |
 | Accounting | `/accounting` | **Sales tab** (invoices, revenue summary) + **Purchases tab** (vendor purchase records, total spent) |
@@ -289,6 +306,11 @@ GITHUB_TOKEN_1=ghp_...
 GITHUB_TOKEN_2=ghp_...
 GITHUB_TOKEN_3=ghp_...
 GITHUB_BASE_URL=https://models.inference.ai.azure.com
+
+# Twilio SMS (for Marketing Agent SMS campaigns)
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
 ```
 
 To get a GitHub Models API key: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (classic). Free tier includes GPT-4o-mini access.
@@ -358,7 +380,9 @@ python -m evaluation.run_eval
 | 8 | Purchase Orders + Supplier management | Done |
 | 9 | Accounting Purchases tab + vendor expense tracking | Done |
 | 10 | AI Agent chat history persistence (PostgreSQL) | Done |
-| 11 | Docker Compose + deployment | Pending |
+| 11 | Sales Dashboard (KPIs, charts, filters, silent refresh) | Done |
+| 12 | Email + SMS marketing tools for Marketing Agent | Done |
+| 13 | Docker Compose + deployment | Pending |
 
 ---
 
@@ -371,3 +395,6 @@ python -m evaluation.run_eval
 - **Vendor purchase accounting:** The Accounting page has a dedicated Purchases tab showing all received POs as expense records with a monthly summary. The Accounting Agent has a `get_purchase_expenses` tool to answer purchase-related financial questions.
 - **Persistent chat history:** Every user and assistant message is saved to the `chat_messages` table immediately. On page load, the AI Agent page fetches the full conversation history from the database — history survives navigation, refresh, and device switches. Error messages (guardrail blocks, network failures) are intentionally not persisted.
 - **Timezone-aware datetimes:** All datetime comparisons use `datetime.now(timezone.utc)` throughout the backend to correctly compare against PostgreSQL `timestamptz` columns.
+- **Atomic sell_product tool:** The `sell_product` agent tool deducts stock and creates the Invoice, InvoiceItem, and Sale records in a single database transaction — ensuring sales always appear in Accounting and never leave orphaned stock changes.
+- **Silent background refresh:** The Sales Dashboard uses a two-state loading model — `loading` (skeletons, first mount only) and `syncing` (background indicator only). After the initial load, data refreshes every 30s in the background without blanking the page; a small animated dot in the header signals the sync.
+- **Email and SMS marketing:** The Marketing Agent can send promotional emails to customers via Gmail SMTP and promotional SMS via Twilio. Both tools accept an optional `min_loyalty_points` filter; defaulting to 0 sends to all customers.
