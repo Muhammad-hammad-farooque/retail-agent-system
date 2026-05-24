@@ -106,9 +106,30 @@ app.add_middleware(
 )
 
 
+def _seed_admin():
+    from .database import SessionLocal
+    from .models.user import User, UserRole
+    from .auth.jwt_handler import hash_password
+    db = SessionLocal()
+    try:
+        if not db.query(User).filter(User.username == "admin").first():
+            db.add(User(
+                username="admin",
+                email="admin@retailsystem.com",
+                hashed_password=hash_password("admin123"),
+                role=UserRole.admin,
+                is_active=True,
+            ))
+            db.commit()
+            print("[Startup] Default admin user created.")
+    finally:
+        db.close()
+
+
 @app.on_event("startup")
 def startup():
     create_tables()
+    _seed_admin()
     api_keys = _load_api_keys()
     print(f"[Startup] Loaded {len(api_keys)} API key(s) for rotation.")
     client = AsyncOpenAI(
