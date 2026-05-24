@@ -174,8 +174,12 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
             email_sent = False
             if supplier_obj and supplier_obj.email:
                 email_sent = send_vendor_email(supplier_obj, po)
-                po.status = PurchaseOrderStatus.sent_to_vendor
-                approval_note = f"Auto-approved & emailed to {supplier_obj.name} ({supplier_obj.email})"
+                if email_sent:
+                    po.status = PurchaseOrderStatus.sent_to_vendor
+                    approval_note = f"Auto-approved & email sent to {supplier_obj.name} ({supplier_obj.email})"
+                else:
+                    po.status = PurchaseOrderStatus.approved
+                    approval_note = f"Auto-approved but EMAIL FAILED for {supplier_obj.name} ({supplier_obj.email}) — check SMTP credentials on Render"
             else:
                 po.status = PurchaseOrderStatus.approved
                 approval_note = "Auto-approved (no supplier email on record — send manually)"
