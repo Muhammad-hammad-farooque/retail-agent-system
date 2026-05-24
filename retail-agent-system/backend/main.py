@@ -44,6 +44,7 @@ class _RotatingKeyTransport(httpx.AsyncBaseTransport):
 
         body = json.loads(request.content)
         body["model"] = self._model
+        body.pop("verbosity", None)
         new_content = json.dumps(body).encode()
         headers = dict(request.headers)
         headers["content-length"] = str(len(new_content))
