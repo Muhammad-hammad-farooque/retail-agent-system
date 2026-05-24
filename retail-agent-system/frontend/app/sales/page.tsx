@@ -269,7 +269,7 @@ export default function SalesDashboardPage() {
                       cx="50%"
                       cy="50%"
                       outerRadius={80}
-                      label={({ method, percent }) => `${method} ${(percent * 100).toFixed(0)}%`}
+                      label={({ method, percent }) => `${method} ${((percent ?? 0) * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
                       {profitSummary.payment_breakdown.map((_, i) => (
