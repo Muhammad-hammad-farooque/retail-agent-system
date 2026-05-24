@@ -399,6 +399,38 @@ def sell_product(
 
 
 @function_tool
+def update_price(product_id: int, new_price: float) -> str:
+    """Update the base selling price of a product. Use when supplier cost changes or market price adjustment is needed."""
+    db = _db()
+    try:
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            return f"Product with ID {product_id} not found."
+        if new_price <= 0:
+            return "Price must be greater than zero."
+        if new_price < product.cost_price:
+            return (
+                f"Cannot set price to Rs.{new_price:,.0f} — below cost price Rs.{product.cost_price:,.0f}. "
+                f"Minimum selling price must be above cost."
+            )
+        old_price = product.price
+        product.price = new_price
+        db.commit()
+        change_pct = ((new_price - old_price) / old_price) * 100
+        return (
+            f"Price Updated: {product.name}\n"
+            f"Old Price : Rs.{old_price:,.0f}\n"
+            f"New Price : Rs.{new_price:,.0f}\n"
+            f"Change    : {change_pct:+.1f}%"
+        )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to update price: {str(e)}"
+    finally:
+        db.close()
+
+
+@function_tool
 def list_products_by_category(category: str) -> str:
     """List all active products in a given category."""
     db = _db()

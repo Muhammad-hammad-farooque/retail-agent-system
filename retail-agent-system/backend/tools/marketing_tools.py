@@ -153,6 +153,82 @@ def create_promotion(product_id: int, discount_pct: float, start_date: str, end_
 
 
 @function_tool
+def create_category_promotion(category: str, discount_pct: float, start_date: str, end_date: str) -> str:
+    """Create a promotional discount for ALL products in a category at once.
+    Use this when the user wants to apply a discount to an entire category (e.g. all Clothing items).
+    discount_pct: 0-70. Products where the discount would go below cost price get the maximum safe discount instead."""
+    db = _db()
+    try:
+        products = db.query(Product).filter(
+            Product.category.ilike(f"%{category}%"),
+            Product.is_active == True,
+        ).all()
+
+        if not products:
+            return f"No active products found in category '{category}'."
+
+        if not (0 < discount_pct <= 70):
+            return "Discount must be between 1% and 70%."
+
+        created = []
+        skipped = []
+
+        for product in products:
+            effective_discount = discount_pct
+            discounted_price = product.price * (1 - effective_discount / 100)
+
+            if discounted_price < product.cost_price:
+                max_safe = ((product.price - product.cost_price) / product.price) * 100
+                if max_safe <= 0:
+                    skipped.append(f"{product.name} (no margin)")
+                    continue
+                effective_discount = round(max_safe * 0.95, 1)
+                discounted_price = product.price * (1 - effective_discount / 100)
+
+            promo = Promotion(
+                product_id=product.id,
+                discount_pct=effective_discount,
+                original_price=product.price,
+                promo_price=discounted_price,
+                start_date=start_date,
+                end_date=end_date,
+            )
+            db.add(promo)
+            created.append(f"  {product.name}: {effective_discount}% off  Rs.{product.price:,.0f} -> Rs.{discounted_price:,.0f}")
+
+        if created:
+            db.add(Notification(
+                type=NotificationType.promotion,
+                title=f"Category Promotion: {category}",
+                message=f"{discount_pct}% off on all {category} items from {start_date} to {end_date}. {len(created)} products included.",
+                reference_id=None,
+                reference_type="category",
+            ))
+            db.commit()
+
+        lines = [
+            f"Category Promotion Created: {category}",
+            f"Requested Discount : {discount_pct}%",
+            f"Valid              : {start_date} to {end_date}",
+            f"Products Created   : {len(created)}",
+        ]
+        if created:
+            lines.append("\nProducts included:")
+            lines.extend(created)
+        if skipped:
+            lines.append(f"\nSkipped ({len(skipped)} products — zero margin):")
+            lines.extend(f"  {s}" for s in skipped)
+
+        return "\n".join(lines)
+
+    except Exception as e:
+        db.rollback()
+        return f"Failed to create category promotion: {str(e)}"
+    finally:
+        db.close()
+
+
+@function_tool
 def send_promotional_email(subject: str, message: str, min_loyalty_points: int = 0) -> str:
     """Send a promotional email to customers. Optionally filter by minimum loyalty points (e.g. 500 for VIP customers only). Use 0 to send to all customers."""
     db = _db()

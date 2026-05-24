@@ -47,13 +47,21 @@ def get_invoice(invoice_id: int) -> str:
 
 
 @function_tool
-def get_financial_summary(start_date: Optional[str] = None, end_date: Optional[str] = None) -> str:
-    """Get financial summary for a date range (format: YYYY-MM-DD). Defaults to current month."""
+def get_financial_summary(start_date: Optional[str] = None, end_date: Optional[str] = None, days: Optional[int] = None) -> str:
+    """Get financial summary. Use days=7 for last 7 days, days=30 for last 30 days, etc.
+    Or provide start_date/end_date (YYYY-MM-DD) for a specific range. Defaults to current month."""
     db = _db()
     try:
         now = datetime.now(timezone.utc)
-        start = datetime.strptime(start_date, "%Y-%m-%d") if start_date else now.replace(day=1)
-        end = datetime.strptime(end_date, "%Y-%m-%d") if end_date else now
+        if days:
+            start = now - timedelta(days=days)
+            end = now
+        elif start_date:
+            start = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            end = datetime.strptime(end_date, "%Y-%m-%d").replace(tzinfo=timezone.utc) if end_date else now
+        else:
+            start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            end = now
 
         invoices = db.query(Invoice).filter(
             Invoice.created_at >= start,

@@ -72,7 +72,8 @@ retail-agent-system/
 │   └── lib/
 │       └── api.ts            # Axios API client
 ├── scripts/
-│   └── seed_data.py          # Seed products, customers, suppliers, sales
+│   ├── seed_data.py          # Seed products, customers, suppliers, sales
+│   └── update_dates.py       # One-time migration: update all record dates to 2026 range
 ├── tests/
 │   ├── conftest.py
 │   ├── test_guardrails.py
@@ -123,6 +124,7 @@ Routing is done via the OpenAI Agents SDK `handoff()` mechanism. The Triage Agen
 | `update_stock` | Add or deduct stock units |
 | `get_low_stock_alerts` | List products at or below reorder level |
 | `add_product` | Add a new product to inventory |
+| `update_price` | Update a product's base selling price (supplier cost change, market adjustment) |
 | `sell_product` | Process a customer sale: deducts stock, creates paid invoice + sale record atomically |
 | `create_purchase_order` | Create a PO; auto-approves and emails vendor if under Rs.100,000 |
 | `receive_purchase_order` | Mark a PO as received and update stock in one step |
@@ -132,7 +134,7 @@ Routing is done via the OpenAI Agents SDK `handoff()` mechanism. The Triage Agen
 | Tool | Description |
 |------|-------------|
 | `get_invoice` | Retrieve a specific sales invoice |
-| `get_financial_summary` | Revenue summary for a date range |
+| `get_financial_summary` | Revenue summary — pass `days=7` for relative periods or `start_date`/`end_date` for specific ranges |
 | `calculate_profit_loss` | P&L report for past N days |
 | `get_revenue_by_category` | Revenue and profit by product category |
 | `get_top_selling_products` | Top sellers by revenue |
@@ -141,15 +143,29 @@ Routing is done via the OpenAI Agents SDK `handoff()` mechanism. The Triage Agen
 | `reject_purchase_order` | Reject a PO with a reason |
 
 ### Customer Service Agent
-Handles: customer lookup, complaint creation and resolution, loyalty points, order history, returns and store policies. Sends resolution emails to customers when a complaint is resolved.
+| Tool | Description |
+|------|-------------|
+| `search_customer_by_name` | Search customers by partial name |
+| `get_customer_info` | Full customer profile — loyalty points, total spent, contact |
+| `get_order_history` | Recent invoice history for a customer |
+| `update_loyalty_points` | Add or deduct loyalty points |
+| `handle_complaint` | Log a customer complaint, assign a reference number, create notification |
+| `search_faq` | Semantic search over the store FAQ knowledge base (RAG pipeline) |
+
+Resolving a complaint via the `/complaints` page automatically sends a resolution email to the customer.
 
 ### Marketing Agent
 | Tool | Description |
 |------|-------------|
+| `get_sales_trends` | Daily sales trends for past N days, optionally filtered by category |
+| `get_top_products` | Top performing products by revenue for marketing focus |
+| `create_promotion` | Create a time-bound discount for a single product |
+| `create_category_promotion` | Apply a discount to all products in a category at once (e.g. "30% off all Clothing") |
+| `generate_marketing_report` | Full report: revenue trends, top category, low-margin products |
 | `send_promotional_email` | Send a promotional email to all customers (or filtered by loyalty points) via Gmail SMTP |
 | `send_promotional_sms` | Send a promotional SMS to all customers (or filtered by loyalty points) via Twilio |
 
-Also handles: promotions, discounts, price changes, sales trend reports, top products, and campaign recommendations.
+**Discount rules:** 1–30% proceeds immediately. 31–70% requires one-time manager confirmation. Above 70% is hard-blocked to prevent below-cost pricing. Price update (`update_price`) belongs to Inventory Agent — Marketing only handles temporary promotional discounts.
 
 ---
 
@@ -398,3 +414,10 @@ python -m evaluation.run_eval
 - **Atomic sell_product tool:** The `sell_product` agent tool deducts stock and creates the Invoice, InvoiceItem, and Sale records in a single database transaction — ensuring sales always appear in Accounting and never leave orphaned stock changes.
 - **Silent background refresh:** The Sales Dashboard uses a two-state loading model — `loading` (skeletons, first mount only) and `syncing` (background indicator only). After the initial load, data refreshes every 30s in the background without blanking the page; a small animated dot in the header signals the sync.
 - **Email and SMS marketing:** The Marketing Agent can send promotional emails to customers via Gmail SMTP and promotional SMS via Twilio. Both tools accept an optional `min_loyalty_points` filter; defaulting to 0 sends to all customers.
+- **Agent date awareness:** GPT-4o-mini has no knowledge of the current date. Every query is prepended with `[System: Today's date is <weekday, DD Month YYYY>]` in `agent_router.py` before being passed to the Triage Agent — ensuring date-relative queries ("last 7 days", "this month") resolve correctly.
+- **Financial summary `days` parameter:** `get_financial_summary` accepts a `days` integer for relative lookups (e.g. `days=7`) in addition to explicit `start_date`/`end_date` strings. Using `days` avoids the need for the agent to construct date strings and eliminates timezone parsing bugs.
+- **Category bulk promotions:** `create_category_promotion` takes a category name and applies a discount to all active products in that category in one call — the agent never needs individual product IDs. It automatically caps any product's discount to avoid below-cost pricing and reports which products were included.
+- **Price update ownership:** `update_price` belongs to the Inventory Agent, not Marketing. Changing a product's base selling price is a permanent supplier-cost or market-rate adjustment. Marketing Agent handles only temporary promotional discounts via `create_promotion` and `create_category_promotion`.
+- **PII masking precision:** The `ADDRESS_PATTERN` regex uses `\b` word boundaries and requires an explicit dot on `St.` to prevent false positives. Generic words like `Flat` and `Phase` were removed from the pattern after they triggered false matches on retail phrases ("Flat Discount", "Phase 2 promotion").
+- **Consistent date format:** All date displays across the frontend (Accounting, Purchase Orders, Complaints, Sales) use `toLocaleDateString('en-GB')` to enforce dd/mm/yyyy format regardless of the user's browser locale. Chart axis labels use `%d/%m` strftime format on the backend.
+- **Historical data migration:** `scripts/update_dates.py` is a one-time migration that back-fills all existing records (invoices, sales, purchase orders, complaints, notifications, chat messages, promotions) with realistic random timestamps from 2026-01-01 to today. Distribution is weighted toward weekdays and business hours to simulate real store traffic.

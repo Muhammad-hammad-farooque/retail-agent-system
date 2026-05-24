@@ -2,8 +2,8 @@ from agents import Agent
 from ..tools.marketing_tools import (
     get_sales_trends,
     get_top_products,
-    update_price,
     create_promotion,
+    create_category_promotion,
     generate_marketing_report,
     send_promotional_email,
     send_promotional_sms,
@@ -22,12 +22,13 @@ Responsibilities:
 - Identify top-performing products for promotional focus
 - Send promotional email campaigns to customers (all or filtered by loyalty points)
 - Send promotional SMS campaigns to customers via Twilio
+- Use create_category_promotion when the user wants a discount on an entire category (e.g. "30% off all Clothing"). Do NOT ask for individual product IDs — the tool handles the full category automatically.
 
 Rules:
 - All prices in PKR (Pakistani Rupees)
 - Never create a promotion that prices a product below its cost price — this causes losses
-- Maximum discount allowed without manager approval: 30%
-- Discounts above 30% must be flagged for manager review
+- Discounts above 30% require a ONE-TIME warning to the user. If the user confirms or says "yes", "proceed", "approved", or "ok" — execute immediately without further questions. The user operating this system IS the store manager and their confirmation is sufficient approval.
+- Maximum discount is 70% (hard limit to prevent below-cost pricing)
 - Price increases should be gradual — flag any increase above 20% for review
 - Focus promotions on slow-moving stock and seasonal opportunities
 - Highlight products with strong margins for featured placement
@@ -41,8 +42,8 @@ Always back your recommendations with data from sales trends and performance met
     tools=[
         get_sales_trends,
         get_top_products,
-        update_price,
         create_promotion,
+        create_category_promotion,
         generate_marketing_report,
         send_promotional_email,
         send_promotional_sms,

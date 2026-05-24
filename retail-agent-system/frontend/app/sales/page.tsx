@@ -403,7 +403,7 @@ export default function SalesDashboardPage() {
                           </span>
                         </td>
                         <td className="py-3 text-xs text-gray-400">
-                          {t.created_at ? new Date(t.created_at).toLocaleString() : '—'}
+                          {t.created_at ? new Date(t.created_at).toLocaleDateString('en-GB') + ' ' + new Date(t.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'}
                         </td>
                       </tr>
                     ))}

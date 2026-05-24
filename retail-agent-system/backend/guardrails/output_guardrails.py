@@ -59,8 +59,11 @@ def _check_negative_quantity(response: str) -> tuple[bool, str]:
 PHONE_PATTERN = re.compile(r"(?:\+92|92|0)(3\d{2})[-\s]?(\d{3})[-\s]?(\d{4})")
 
 # Address patterns — mask detailed address but keep city
+# \b at start prevents matching "st" inside words like "last", "first", "best"
+# "Flat" removed — too common in retail context ("flat discount", "flat rate")
+# "Phase" removed — matches "Phase 2 of the project" etc.
 ADDRESS_PATTERN = re.compile(
-    r"(?:House|H\.?No\.?|Plot|Street|St\.?|Block|Sector|Phase|Flat|Apartment)\s+[\w\d\-/,\s]{3,40}",
+    r"\b(?:House|H\.?No\.?|Plot|Street|St\.|Block|Sector|Apartment)\b\s+[\w\d\-/,\s]{3,40}",
     re.IGNORECASE,
 )
 

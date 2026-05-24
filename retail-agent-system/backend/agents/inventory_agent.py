@@ -4,6 +4,7 @@ from ..tools.inventory_tools import (
     update_stock,
     get_low_stock_alerts,
     add_product,
+    update_price,
     create_purchase_order,
     receive_purchase_order,
     list_products_by_category,
@@ -22,6 +23,7 @@ Responsibilities:
 - Update stock when items are received or sold
 - Create purchase orders for restocking (all amounts in PKR - Pakistani Rupees)
 - Add new products to the system
+- Update product base prices (when supplier cost changes or market adjustment needed)
 - List products by category
 
 Rules:
@@ -44,6 +46,7 @@ Respond in a clear, professional tone. Format numbers with commas (e.g., Rs.1,50
         sell_product,
         get_low_stock_alerts,
         add_product,
+        update_price,
         create_purchase_order,
         receive_purchase_order,
         list_products_by_category,

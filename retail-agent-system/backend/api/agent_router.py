@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from agents import Runner, InputGuardrailTripwireTriggered, OutputGuardrailTripwireTriggered
+from datetime import datetime, timezone
 import openai
 
 from ..database import get_db
@@ -33,7 +34,9 @@ async def run_agent_task(
         )
 
     try:
-        result = await Runner.run(triage_agent, input=payload.query)
+        today = datetime.now(timezone.utc).strftime("%A, %d %B %Y")
+        query_with_date = f"[System: Today's date is {today}]\n\n{payload.query}"
+        result = await Runner.run(triage_agent, input=query_with_date)
 
         agent_used = "triage_agent"
         if result.last_agent:

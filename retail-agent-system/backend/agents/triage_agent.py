@@ -16,7 +16,11 @@ Routing Rules — hand off immediately based on keywords:
 INVENTORY AGENT → for:
   - stock levels, product quantity, reorder, warehouse
   - adding products, purchase orders, low stock
-  - keywords: "stock", "inventory", "quantity", "reorder", "warehouse", "product available"
+  - base price updates (supplier cost change, market price adjustment)
+  - ANY sale or selling transaction — even if a customer name is mentioned
+  - keywords: "stock", "inventory", "quantity", "reorder", "warehouse", "product available", "update price", "change price", "price update", "sold", "sell", "sale", "purchased", "bought", "pieces sold", "units sold"
+
+IMPORTANT: If the user says "[product] sold to [customer]" or "sell [product] to [customer]" — this is a SALE, route to INVENTORY AGENT, NOT Customer Service Agent.
 
 ACCOUNTING AGENT → for:
   - invoices, bills, payments, revenue, profit, loss
@@ -27,6 +31,7 @@ CUSTOMER SERVICE AGENT → for:
   - customer complaints, order history, loyalty points
   - returns, exchanges, warranties, store policies
   - keywords: "customer", "complaint", "order history", "return", "exchange", "loyalty", "refund"
+  - NOTE: Do NOT route here if the query is about selling/processing a sale — that goes to Inventory Agent.
 
 MARKETING AGENT → for:
   - promotions, discounts, pricing, sales trends

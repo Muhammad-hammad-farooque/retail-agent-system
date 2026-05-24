@@ -127,7 +127,7 @@ def get_daily_revenue(
         key = str(d)
         output.append({
             "date": key,
-            "label": d.strftime("%b %d"),
+            "label": d.strftime("%d/%m"),
             "revenue": revenue_map.get(key, {}).get("revenue", 0),
             "count": revenue_map.get(key, {}).get("count", 0),
         })

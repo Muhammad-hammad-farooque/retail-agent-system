@@ -214,7 +214,7 @@ export default function AccountingPage() {
                           {(inv.tax || 0).toLocaleString()}
                         </td>
                         <td className="py-3 text-gray-500 text-xs">
-                          {new Date(inv.created_at).toLocaleDateString()}
+                          {new Date(inv.created_at).toLocaleDateString('en-GB')}
                         </td>
                       </tr>
                     ))}
@@ -312,7 +312,7 @@ export default function AccountingPage() {
                           {(po.total_cost || 0).toLocaleString()}
                         </td>
                         <td className="py-3 text-xs text-gray-400">
-                          {new Date(po.created_at).toLocaleDateString()}
+                          {new Date(po.created_at).toLocaleDateString('en-GB')}
                         </td>
                       </tr>
                     ))}

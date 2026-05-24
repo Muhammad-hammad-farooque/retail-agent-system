@@ -148,7 +148,7 @@ export default function PurchaseOrdersPage() {
                     </td>
                     <td className="py-3 pr-4 text-gray-500 max-w-[120px] truncate">{o.supplier || '—'}</td>
                     <td className="py-3 pr-4 text-xs text-gray-400">
-                      {new Date(o.created_at).toLocaleDateString()}
+                      {new Date(o.created_at).toLocaleDateString('en-GB')}
                     </td>
                     <td className="py-3 pr-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
