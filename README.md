@@ -398,7 +398,7 @@ python -m evaluation.run_eval
 | 10 | AI Agent chat history persistence (PostgreSQL) | Done |
 | 11 | Sales Dashboard (KPIs, charts, filters, silent refresh) | Done |
 | 12 | Email + SMS marketing tools for Marketing Agent | Done |
-| 13 | Docker Compose + deployment | Pending |
+| 13 | Docker Compose + deployment | Done |
 
 ---
 
