@@ -35,7 +35,7 @@ async def run_agent_task(
 
     try:
         today = datetime.now(timezone.utc).strftime("%A, %d %B %Y")
-        query_with_date = f"[System: Today's date is {today}]\n\n{payload.query}"
+        query_with_date = f"{payload.query}\n\n(Today's date: {today})"
         result = await Runner.run(triage_agent, input=query_with_date)
 
         agent_used = "triage_agent"
@@ -75,6 +75,19 @@ async def run_agent_task(
         return AgentTaskResponse(
             response="The agent response was blocked due to policy violations (invalid data or approval required).",
             agent_used="output_guardrail",
+            success=False,
+        )
+    except openai.BadRequestError as e:
+        err_str = str(e)
+        if "content_filter" in err_str or "content management policy" in err_str:
+            return AgentTaskResponse(
+                response="Your request was flagged by the AI content filter. Please rephrase your query and try again.",
+                agent_used="triage_agent",
+                success=False,
+            )
+        return AgentTaskResponse(
+            response=f"Bad request error: {err_str[:200]}",
+            agent_used="triage_agent",
             success=False,
         )
     except openai.RateLimitError as e:
