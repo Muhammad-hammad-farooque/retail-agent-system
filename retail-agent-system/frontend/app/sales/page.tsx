@@ -247,7 +247,7 @@ export default function SalesDashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="label" tick={{ fontSize: 10 }} />
                     <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v: number) => [`Rs. ${v.toLocaleString()}`, 'Revenue']} />
+                    <Tooltip formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
                     <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
@@ -276,7 +276,7 @@ export default function SalesDashboardPage() {
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v: number) => `Rs. ${v.toLocaleString()}`} />
+                    <Tooltip formatter={(v) => `Rs. ${(v as number ?? 0).toLocaleString()}`} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -296,7 +296,7 @@ export default function SalesDashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
                     <YAxis dataKey="category" type="category" tick={{ fontSize: 10 }} width={55} />
-                    <Tooltip formatter={(v: number) => [`Rs. ${v.toLocaleString()}`, 'Revenue']} />
+                    <Tooltip formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
                     <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
                       {categories.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Bar>
