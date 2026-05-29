@@ -142,7 +142,8 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
                 f"Status       : {existing.status.value.upper()}"
             )
 
-        total_cost = product.cost_price * quantity
+        unit_cost = product.price
+        total_cost = unit_cost * quantity
         order_number = f"PO-{product_id}-{time.strftime('%Y%m%d%H%M%S')}"
 
         # Auto-link supplier
@@ -162,7 +163,7 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
             product_id=product_id,
             supplier_id=supplier_id,
             quantity=quantity,
-            unit_cost=product.cost_price,
+            unit_cost=unit_cost,
             total_cost=total_cost,
             supplier=product.supplier,
         )
