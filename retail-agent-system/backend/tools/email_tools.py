@@ -4,50 +4,61 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
-def _smtp_credentials():
-    return os.getenv("SMTP_EMAIL"), os.getenv("SMTP_PASSWORD")
+def _send_email(to_email: str, subject: str, body: str) -> tuple[bool, str]:
+    """Core email sender using STARTTLS on port 587 (works on Render + all cloud)."""
+    smtp_email = os.getenv("SMTP_EMAIL")
+    smtp_password = os.getenv("SMTP_PASSWORD")
 
-
-def send_single_email(to_email: str, subject: str, body: str) -> bool:
-    """Send a plain-text email to a single recipient."""
-    smtp_email, smtp_password = _smtp_credentials()
     if not smtp_email or not smtp_password:
-        return False
+        return False, "SMTP_EMAIL or SMTP_PASSWORD not set in environment"
+
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = smtp_email
     msg["To"] = to_email
     msg.attach(MIMEText(body, "plain"))
+
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
             server.login(smtp_email, smtp_password)
             server.sendmail(smtp_email, to_email, msg.as_string())
-        return True
+        return True, ""
+    except smtplib.SMTPAuthenticationError as e:
+        msg = "Gmail authentication failed. Make sure SMTP_PASSWORD is a Gmail App Password (16 chars), not your regular password."
+        print(f"[Email Error - Auth] {e}")
+        return False, msg
+    except smtplib.SMTPConnectError as e:
+        msg = f"Cannot connect to smtp.gmail.com:587 - check network/firewall: {e}"
+        print(f"[Email Error - Connect] {e}")
+        return False, msg
     except Exception as e:
-        print(f"[Email Error] {e}")
-        return False
+        print(f"[Email Error] {type(e).__name__}: {e}")
+        return False, str(e)
+
+
+def send_single_email(to_email: str, subject: str, body: str) -> bool:
+    """Send a plain-text email to a single recipient. Returns True on success."""
+    ok, err = _send_email(to_email, subject, body)
+    if not ok:
+        print(f"[send_single_email] Failed to {to_email}: {err}")
+    return ok
 
 
 def send_vendor_email(supplier, po) -> bool:
     """Send a purchase order email to the vendor/supplier."""
-    smtp_email = os.getenv("SMTP_EMAIL")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-
-    if not smtp_email or not smtp_password:
-        return False
-
-    recipient = supplier.email
     contact = supplier.contact_person or supplier.name
-
-    subject = f"Purchase Order {po.order_number} — Please Confirm"
+    subject = f"Purchase Order {po.order_number} - Please Confirm"
 
     body = f"""Dear {contact},
 
 We are issuing the following Purchase Order from our Retail Management System.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+----------------------------------------
   PURCHASE ORDER: {po.order_number}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+----------------------------------------
 
   Product    : {po.product.name} (SKU: {po.product.sku})
   Quantity   : {po.quantity} units
@@ -55,7 +66,7 @@ We are issuing the following Purchase Order from our Retail Management System.
   Total Cost : Rs.{po.total_cost:,.0f}
   Notes      : {po.notes or 'N/A'}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+----------------------------------------
 
 Please reply to confirm receipt of this order and provide an expected delivery date.
 
@@ -63,51 +74,36 @@ Regards,
 Retail Management System
 """
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = smtp_email
-    msg["To"] = recipient
-    msg.attach(MIMEText(body, "plain"))
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(smtp_email, smtp_password)
-            server.sendmail(smtp_email, recipient, msg.as_string())
-        return True
-    except Exception as e:
-        print(f"[Email Error] {e}")
-        return False
+    ok, err = _send_email(supplier.email, subject, body)
+    if not ok:
+        print(f"[send_vendor_email] Failed to {supplier.email}: {err}")
+    return ok
 
 
 def send_complaint_resolution_email(customer, complaint) -> bool:
     """Send a complaint resolution confirmation email to the customer."""
-    smtp_email = os.getenv("SMTP_EMAIL")
-    smtp_password = os.getenv("SMTP_PASSWORD")
-
-    if not smtp_email or not smtp_password:
-        return False
     if not customer.email:
         return False
 
     from datetime import date
     resolved_on = date.today().strftime("%Y-%m-%d")
 
-    subject = f"Your Complaint Has Been Resolved — Ref: {complaint.reference}"
+    subject = f"Your Complaint Has Been Resolved - Ref: {complaint.reference}"
 
     body = f"""Dear {customer.name},
 
 Thank you for contacting us. We are happy to inform you that your complaint has been resolved.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+----------------------------------------
   COMPLAINT RESOLUTION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+----------------------------------------
 
   Reference No : {complaint.reference}
   Issue        : {complaint.complaint}
   Status       : RESOLVED
   Resolved On  : {resolved_on}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+----------------------------------------
 
 We apologize for any inconvenience caused. Our team has addressed your concern and taken the necessary action.
 
@@ -117,17 +113,7 @@ Regards,
 Retail Management Team
 """
 
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = smtp_email
-    msg["To"] = customer.email
-    msg.attach(MIMEText(body, "plain"))
-
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(smtp_email, smtp_password)
-            server.sendmail(smtp_email, customer.email, msg.as_string())
-        return True
-    except Exception as e:
-        print(f"[Email Error] {e}")
-        return False
+    ok, err = _send_email(customer.email, subject, body)
+    if not ok:
+        print(f"[send_complaint_resolution_email] Failed to {customer.email}: {err}")
+    return ok
