@@ -39,12 +39,12 @@ def _send_email(to_email: str, subject: str, body: str) -> tuple[bool, str]:
         return False, str(e)
 
 
-def send_single_email(to_email: str, subject: str, body: str) -> bool:
-    """Send a plain-text email to a single recipient. Returns True on success."""
+def send_single_email(to_email: str, subject: str, body: str) -> tuple[bool, str]:
+    """Send a plain-text email to a single recipient. Returns (True, '') on success or (False, error) on failure."""
     ok, err = _send_email(to_email, subject, body)
     if not ok:
         print(f"[send_single_email] Failed to {to_email}: {err}")
-    return ok
+    return ok, err
 
 
 def send_vendor_email(supplier, po) -> bool:

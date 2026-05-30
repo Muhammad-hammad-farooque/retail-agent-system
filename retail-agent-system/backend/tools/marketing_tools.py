@@ -260,12 +260,15 @@ def send_promotional_email(
 
         sent = 0
         failed = 0
+        errors = []
         for customer in customers:
             personalized_body = f"Dear {customer.name},\n\n{message}\n\nYour Loyalty Points: {customer.loyalty_points}\n\nRegards,\nRetail Store Team"
-            if send_single_email(customer.email, subject, personalized_body):
+            ok, err = send_single_email(customer.email, subject, personalized_body)
+            if ok:
                 sent += 1
             else:
                 failed += 1
+                errors.append(f"  {customer.name} ({customer.email}): {err}")
 
         target_label = f"Customer: {customer_name}" if customer_name else f"Loyalty Points >= {min_loyalty_points}"
         db.add(Notification(
@@ -277,15 +280,18 @@ def send_promotional_email(
         ))
         db.commit()
 
-        return (
+        result = (
             f"Promotional Email Campaign:\n"
             f"Subject        : {subject}\n"
             f"Target         : {target_label}\n"
             f"Total Customers: {len(customers)}\n"
             f"Emails Sent    : {sent}\n"
             f"Failed         : {failed}\n"
-            f"Status         : {'SUCCESS' if failed == 0 else 'PARTIAL'}"
+            f"Status         : {'SUCCESS' if failed == 0 else ('FAILED' if sent == 0 else 'PARTIAL')}"
         )
+        if errors:
+            result += "\n\nFailure Reasons:\n" + "\n".join(errors)
+        return result
     except Exception as e:
         db.rollback()
         return f"Failed to send promotional emails: {str(e)}"
