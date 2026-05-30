@@ -229,17 +229,33 @@ def create_category_promotion(category: str, discount_pct: float, start_date: st
 
 
 @function_tool
-def send_promotional_email(subject: str, message: str, min_loyalty_points: int = 0) -> str:
-    """Send a promotional email to customers. Optionally filter by minimum loyalty points (e.g. 500 for VIP customers only). Use 0 to send to all customers."""
+def send_promotional_email(
+    subject: str,
+    message: str,
+    min_loyalty_points: int = 0,
+    customer_name: Optional[str] = None,
+) -> str:
+    """Send a promotional email to customers.
+    - customer_name: send to a specific customer only (partial name match, e.g. 'ahmed ali')
+    - min_loyalty_points: filter by loyalty points (e.g. 500 for VIP only). Ignored if customer_name is set.
+    - Leave both at default to send to all customers."""
     db = _db()
     try:
-        customers = db.query(Customer).filter(
+        query = db.query(Customer).filter(
             Customer.is_active == True,
-            Customer.email != None,
-            Customer.loyalty_points >= min_loyalty_points,
-        ).all()
+            Customer.email.isnot(None),
+        )
+
+        if customer_name:
+            query = query.filter(Customer.name.ilike(f"%{customer_name}%"))
+        else:
+            query = query.filter(Customer.loyalty_points >= min_loyalty_points)
+
+        customers = query.all()
 
         if not customers:
+            if customer_name:
+                return f"No customer found matching '{customer_name}' with an email address on file."
             return f"No customers found with loyalty points >= {min_loyalty_points}."
 
         sent = 0
@@ -251,10 +267,11 @@ def send_promotional_email(subject: str, message: str, min_loyalty_points: int =
             else:
                 failed += 1
 
+        target_label = f"Customer: {customer_name}" if customer_name else f"Loyalty Points >= {min_loyalty_points}"
         db.add(Notification(
             type=NotificationType.promotion,
             title="Promotional Email Campaign Sent",
-            message=f"Email '{subject}' sent to {sent} customers (min loyalty: {min_loyalty_points} pts). Failed: {failed}.",
+            message=f"Email '{subject}' sent to {sent} customers ({target_label}). Failed: {failed}.",
             reference_id=None,
             reference_type="marketing",
         ))
@@ -263,7 +280,7 @@ def send_promotional_email(subject: str, message: str, min_loyalty_points: int =
         return (
             f"Promotional Email Campaign:\n"
             f"Subject        : {subject}\n"
-            f"Target Filter  : Loyalty Points >= {min_loyalty_points}\n"
+            f"Target         : {target_label}\n"
             f"Total Customers: {len(customers)}\n"
             f"Emails Sent    : {sent}\n"
             f"Failed         : {failed}\n"
