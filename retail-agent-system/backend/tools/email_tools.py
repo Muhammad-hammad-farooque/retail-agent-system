@@ -19,7 +19,7 @@ def _send_email(to_email: str, subject: str, body: str) -> tuple[bool, str]:
     msg.attach(MIMEText(body, "plain"))
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
             server.ehlo()
             server.starttls()
             server.ehlo()
