@@ -257,8 +257,13 @@ def search_product_by_name(name: str) -> str:
 
 
 @function_tool
-def receive_purchase_order(product_id: int, quantity_received: int) -> str:
-    """Mark a purchase order as received and update product stock in one step.
+def receive_purchase_order(
+    product_id: int,
+    quantity_received: int,
+    excess_action: Optional[str] = None,
+) -> str:
+    """Mark a purchase order as received and update product stock.
+    - excess_action: only required on over-delivery. Pass 'approve' to accept all units, 'reject' to accept only PO quantity.
     Use this when the user says goods/stock/order has arrived or been received."""
     db = _db()
     try:
@@ -284,44 +289,59 @@ def receive_purchase_order(product_id: int, quantity_received: int) -> str:
                 f"Please create a purchase order first, wait for it to be sent to vendor, then mark it received."
             )
 
-        # Quantity mismatch check
-        mismatch_note = ""
-        if quantity_received != po.quantity:
-            diff = quantity_received - po.quantity
-            if diff > 0:
-                mismatch_note = (
-                    f"\nWARNING — Over-delivery: PO was for {po.quantity} units but "
-                    f"{quantity_received} received (+{diff} extra). Stock updated with actual received quantity."
-                )
-            else:
-                mismatch_note = (
-                    f"\nWARNING — Short delivery: PO was for {po.quantity} units but "
-                    f"only {quantity_received} received ({diff} short). Stock updated with actual received quantity."
-                )
+        diff = quantity_received - po.quantity
+
+        # Over-delivery: ask manager for approval before updating stock
+        if diff > 0 and excess_action is None:
+            return (
+                f"Over-Delivery Detected — Manager Approval Required:\n"
+                f"Product        : {product.name} (SKU: {product.sku})\n"
+                f"PO Quantity    : {po.quantity} units\n"
+                f"Qty Received   : {quantity_received} units\n"
+                f"Excess         : +{diff} units\n\n"
+                f"Please confirm:\n"
+                f"  - APPROVE: accept all {quantity_received} units (excess added to stock)\n"
+                f"  - REJECT:  accept only {po.quantity} units (excess {diff} units returned/ignored)"
+            )
+
+        # Determine final quantity to add to stock
+        if diff > 0 and excess_action == "reject":
+            final_qty = po.quantity
+            resolution = f"Excess {diff} units rejected — only PO quantity ({po.quantity}) accepted."
+        else:
+            final_qty = quantity_received
+            resolution = (
+                f"Excess {diff} units approved — full {quantity_received} units added to stock."
+                if diff > 0 else ""
+            )
+
+        # Short delivery warning
+        short_note = ""
+        if diff < 0:
+            short_note = f"\nWARNING — Short delivery: {abs(diff)} units missing from PO. Follow up with supplier."
 
         # Update stock
         old_qty = product.quantity
-        product.quantity = old_qty + quantity_received
+        product.quantity = old_qty + final_qty
         po.status = PurchaseOrderStatus.received
 
-        notif = Notification(
+        db.add(Notification(
             type=NotificationType.purchase_order,
             title="Stock Received",
-            message=f"Received {quantity_received} units of {product.name} (PO qty: {po.quantity}). Stock: {old_qty} → {product.quantity}",
+            message=f"Received {final_qty} units of {product.name} (PO qty: {po.quantity}). Stock: {old_qty} → {product.quantity}",
             reference_id=product_id,
             reference_type="product",
-        )
-        db.add(notif)
+        ))
         db.commit()
 
         return (
             f"Order Received — All Updated:\n"
             f"Product        : {product.name} (SKU: {product.sku})\n"
             f"PO Quantity    : {po.quantity} units\n"
-            f"Qty Received   : {quantity_received} units\n"
+            f"Qty Received   : {final_qty} units\n"
             f"Stock          : {old_qty} → {product.quantity} units\n"
-            f"Purchase Order : {po.order_number} → RECEIVED"
-            f"{mismatch_note}"
+            f"Purchase Order : {po.order_number} → RECEIVED\n"
+            f"{resolution}{short_note}"
         )
     except Exception as e:
         db.rollback()
