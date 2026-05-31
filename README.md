@@ -13,8 +13,11 @@ An intelligent retail store automation platform powered by a multi-agent AI syst
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
 | AI / Agents | OpenAI Agents SDK (`openai-agents`), GitHub Models (`gpt-4o-mini`) |
 | Auth | JWT (HS256), bcrypt |
-| Email | SMTP via Gmail (smtplib) |
-| Database ORM | SQLAlchemy with Alembic-compatible models |
+| Email | Brevo API (transactional email, works on all cloud providers) |
+| SMS | Twilio |
+| Database ORM | SQLAlchemy (auto-creates tables on startup) |
+| Deployment | Render (backend) + Neon (PostgreSQL) + Vercel (frontend) |
+| Containerization | Docker + Docker Compose |
 
 ---
 
@@ -84,6 +87,9 @@ retail-agent-system/
 │   ├── evaluator.py
 │   ├── test_cases.py
 │   └── run_eval.py
+├── Dockerfile                # Backend Docker image
+├── docker-compose.yml        # Local dev: postgres + backend + frontend
+├── .dockerignore
 ├── .env
 └── requirements.txt
 ```
@@ -162,7 +168,7 @@ Resolving a complaint via the `/complaints` page automatically sends a resolutio
 | `create_promotion` | Create a time-bound discount for a single product |
 | `create_category_promotion` | Apply a discount to all products in a category at once (e.g. "30% off all Clothing") |
 | `generate_marketing_report` | Full report: revenue trends, top category, low-margin products |
-| `send_promotional_email` | Send a promotional email to all customers (or filtered by loyalty points) via Gmail SMTP |
+| `send_promotional_email` | Send a promotional email via Brevo API — filter by `customer_name` (specific person), `min_loyalty_points` (VIP only), or send to all |
 | `send_promotional_sms` | Send a promotional SMS to all customers (or filtered by loyalty points) via Twilio |
 
 **Discount rules:** 1–30% proceeds immediately. 31–70% requires one-time manager confirmation. Above 70% is hard-blocked to prevent below-cost pricing. Price update (`update_price`) belongs to Inventory Agent — Marketing only handles temporary promotional discounts.
@@ -307,9 +313,9 @@ Create a `.env` file inside the `retail-agent-system/` directory:
 # Database
 DATABASE_URL=postgresql://postgres:PASSWORD@localhost/retail_db
 
-# Email (Gmail SMTP)
-SMTP_EMAIL=your@gmail.com
-SMTP_PASSWORD=your_app_password
+# Email — Brevo API (transactional email)
+SMTP_EMAIL=your@gmail.com          # Used as the "from" address in all emails
+BREVO_API_KEY=xkeysib-...          # Get from brevo.com → Settings → SMTP & API → API Keys
 
 # JWT
 JWT_SECRET=your_secret_key
@@ -329,7 +335,13 @@ TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
 ```
 
-To get a GitHub Models API key: GitHub → Settings → Developer settings → Personal access tokens → Generate new token (classic). Free tier includes GPT-4o-mini access.
+**Email setup (Brevo):**
+1. Sign up at [brevo.com](https://brevo.com)
+2. Settings → Senders & IPs → Add your sender email and verify it
+3. Settings → SMTP & API → API Keys → Generate key
+4. Set `BREVO_API_KEY` in `.env`
+
+**GitHub Models API key:** GitHub → Settings → Developer settings → Personal access tokens → Generate new token (classic). Free tier includes GPT-4o-mini access.
 
 ---
 
@@ -367,6 +379,48 @@ npm run dev
 ```
 
 Frontend runs at `http://localhost:3000`.
+
+---
+
+## Docker (Local Dev)
+
+Run the full stack (PostgreSQL + backend + frontend) with one command:
+
+```bash
+cd retail-agent-system
+docker-compose up --build
+```
+
+| Service | URL |
+|---------|-----|
+| Frontend | `http://localhost:3000` |
+| Backend | `http://localhost:8000` |
+| PostgreSQL | `localhost:5432` |
+
+> `DATABASE_URL` in `docker-compose.yml` automatically overrides `.env` to use the internal Docker hostname (`postgres`). All other secrets load from `.env` as-is.
+
+---
+
+## Deployment
+
+Production stack: **Render** (backend) + **Neon** (PostgreSQL) + **Vercel** (frontend)
+
+| Service | Purpose | Free Tier |
+|---------|---------|-----------|
+| [Neon](https://neon.tech) | PostgreSQL | 0.5 GB, no expiry |
+| [Render](https://render.com) | FastAPI backend | 750 hrs/month |
+| [Vercel](https://vercel.com) | Next.js frontend | Free forever |
+
+### Steps
+
+**1. Neon** — Create project → copy connection string (`postgresql://...neon.tech/neondb?sslmode=require`)
+
+**2. Render** — New Web Service → connect GitHub repo → Root Directory: `retail-agent-system` → Environment: Docker → add all `.env` variables (use Neon's URL as `DATABASE_URL`)
+
+**3. Vercel** — New Project → Root Directory: `retail-agent-system/frontend` → add env variable:
+```
+NEXT_PUBLIC_API_URL=https://your-app.onrender.com
+```
 
 ---
 
@@ -413,7 +467,8 @@ python -m evaluation.run_eval
 - **Timezone-aware datetimes:** All datetime comparisons use `datetime.now(timezone.utc)` throughout the backend to correctly compare against PostgreSQL `timestamptz` columns.
 - **Atomic sell_product tool:** The `sell_product` agent tool deducts stock and creates the Invoice, InvoiceItem, and Sale records in a single database transaction — ensuring sales always appear in Accounting and never leave orphaned stock changes.
 - **Silent background refresh:** The Sales Dashboard uses a two-state loading model — `loading` (skeletons, first mount only) and `syncing` (background indicator only). After the initial load, data refreshes every 30s in the background without blanking the page; a small animated dot in the header signals the sync.
-- **Email and SMS marketing:** The Marketing Agent can send promotional emails to customers via Gmail SMTP and promotional SMS via Twilio. Both tools accept an optional `min_loyalty_points` filter; defaulting to 0 sends to all customers.
+- **Email provider — Brevo API:** Promotional and transactional emails are sent via Brevo's HTTPS API instead of raw SMTP. Raw SMTP (port 587) is blocked on cloud providers like Render; Brevo uses standard HTTPS and works everywhere. `SMTP_EMAIL` is kept as the "from" address; `SMTP_PASSWORD` is no longer needed.
+- **Email targeting:** `send_promotional_email` supports three modes — `customer_name` for a specific person (partial match), `min_loyalty_points` for VIP segments, or no filter to reach all customers. Error reasons per recipient are surfaced directly in the agent response.
 - **Agent date awareness:** GPT-4o-mini has no knowledge of the current date. Every query is prepended with `[System: Today's date is <weekday, DD Month YYYY>]` in `agent_router.py` before being passed to the Triage Agent — ensuring date-relative queries ("last 7 days", "this month") resolve correctly.
 - **Financial summary `days` parameter:** `get_financial_summary` accepts a `days` integer for relative lookups (e.g. `days=7`) in addition to explicit `start_date`/`end_date` strings. Using `days` avoids the need for the agent to construct date strings and eliminates timezone parsing bugs.
 - **Category bulk promotions:** `create_category_promotion` takes a category name and applies a discount to all active products in that category in one call — the agent never needs individual product IDs. It automatically caps any product's discount to avoid below-cost pricing and reports which products were included.
