@@ -1,39 +1,36 @@
-import smtplib
 import os
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import httpx
 
 
 def _send_email(to_email: str, subject: str, body: str) -> tuple[bool, str]:
-    """Core email sender using STARTTLS on port 587 (works on Render + all cloud)."""
-    smtp_email = os.getenv("SMTP_EMAIL")
-    smtp_password = os.getenv("SMTP_PASSWORD")
+    """Core email sender using Brevo API (works on all cloud providers including Render)."""
+    api_key = os.getenv("BREVO_API_KEY")
+    if not api_key:
+        return False, "BREVO_API_KEY not set in environment variables."
 
-    if not smtp_email or not smtp_password:
-        return False, "SMTP_EMAIL or SMTP_PASSWORD not set in environment"
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = smtp_email
-    msg["To"] = to_email
-    msg.attach(MIMEText(body, "plain"))
+    from_email = os.getenv("SMTP_EMAIL", "retailmanagement2026@gmail.com")
 
     try:
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=20) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(smtp_email, smtp_password)
-            server.sendmail(smtp_email, to_email, msg.as_string())
-        return True, ""
-    except smtplib.SMTPAuthenticationError as e:
-        msg = "Gmail authentication failed. Make sure SMTP_PASSWORD is a Gmail App Password (16 chars), not your regular password."
-        print(f"[Email Error - Auth] {e}")
-        return False, msg
-    except smtplib.SMTPConnectError as e:
-        msg = f"Cannot connect to smtp.gmail.com:587 - check network/firewall: {e}"
-        print(f"[Email Error - Connect] {e}")
-        return False, msg
+        with httpx.Client(timeout=20) as client:
+            response = client.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "api-key": api_key,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "sender": {"name": "Retail Store", "email": from_email},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "textContent": body,
+                },
+            )
+
+        if response.status_code == 201:
+            return True, ""
+        else:
+            return False, f"Brevo error {response.status_code}: {response.text}"
+
     except Exception as e:
         print(f"[Email Error] {type(e).__name__}: {e}")
         return False, str(e)
