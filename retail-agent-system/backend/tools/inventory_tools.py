@@ -9,7 +9,7 @@ from ..models.purchase_order import PurchaseOrder, PurchaseOrderStatus
 from ..models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from ..models.sale import Sale
 from ..models.notification import Notification, NotificationType
-from ..tools.email_tools import send_vendor_email
+from ..tools.email_tools import send_vendor_email, send_single_email
 
 BUDGET_THRESHOLD = 100_000
 
@@ -318,7 +318,10 @@ def receive_purchase_order(
         # Short delivery warning
         short_note = ""
         if diff < 0:
-            short_note = f"\nWARNING — Short delivery: {abs(diff)} units missing from PO. Follow up with supplier."
+            short_note = (
+                f"\nWARNING — Short delivery: {abs(diff)} units missing from PO ({po.order_number}).\n"
+                f"Should I send a short delivery notification email to the supplier? (yes/no)"
+            )
 
         # Update stock
         old_qty = product.quantity
@@ -468,6 +471,81 @@ def update_price(product_id: int, new_price: float) -> str:
     except Exception as e:
         db.rollback()
         return f"Failed to update price: {str(e)}"
+    finally:
+        db.close()
+
+
+@function_tool
+def notify_supplier_short_delivery(product_id: int, po_number: str, quantity_ordered: int, quantity_received: int) -> str:
+    """Send a short delivery notification email to the supplier when received quantity is less than ordered."""
+    db = _db()
+    try:
+        product = db.query(Product).filter(Product.id == product_id).first()
+        if not product:
+            return f"Product with ID {product_id} not found."
+
+        # Find supplier
+        supplier = None
+        if product.supplier:
+            supplier = db.query(Supplier).filter(
+                Supplier.name.ilike(f"%{product.supplier}%"),
+                Supplier.is_active == True,
+            ).first()
+
+        if not supplier or not supplier.email:
+            return (
+                f"Cannot send email — no supplier email found for {product.name}. "
+                f"Please contact the supplier manually regarding short delivery on {po_number}."
+            )
+
+        missing = quantity_ordered - quantity_received
+        contact = supplier.contact_person or supplier.name
+        subject = f"Short Delivery Alert — {po_number}"
+        body = f"""Dear {contact},
+
+We are writing to inform you of a short delivery against the following Purchase Order.
+
+----------------------------------------
+  SHORT DELIVERY NOTICE: {po_number}
+----------------------------------------
+
+  Product          : {product.name} (SKU: {product.sku})
+  Quantity Ordered : {quantity_ordered} units
+  Quantity Received: {quantity_received} units
+  Units Missing    : {missing} units
+
+----------------------------------------
+
+Please arrange to ship the remaining {missing} units at your earliest convenience,
+or contact us to discuss an alternative resolution.
+
+Regards,
+Retail Management System
+"""
+        ok, err = send_single_email(supplier.email, subject, body)
+        if not ok:
+            return f"Failed to send email to {supplier.name} ({supplier.email}): {err}"
+
+        db.add(Notification(
+            type=NotificationType.purchase_order,
+            title="Short Delivery — Supplier Notified",
+            message=f"Supplier {supplier.name} notified about {missing} missing units on {po_number}.",
+            reference_id=product_id,
+            reference_type="product",
+        ))
+        db.commit()
+
+        return (
+            f"Supplier Notified Successfully:\n"
+            f"Supplier  : {supplier.name}\n"
+            f"Email     : {supplier.email}\n"
+            f"PO Number : {po_number}\n"
+            f"Missing   : {missing} units\n"
+            f"Status    : Email sent"
+        )
+    except Exception as e:
+        db.rollback()
+        return f"Failed to notify supplier: {str(e)}"
     finally:
         db.close()
 

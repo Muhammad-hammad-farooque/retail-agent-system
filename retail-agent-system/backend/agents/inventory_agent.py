@@ -7,6 +7,7 @@ from ..tools.inventory_tools import (
     update_price,
     create_purchase_order,
     receive_purchase_order,
+    notify_supplier_short_delivery,
     list_products_by_category,
     search_product_by_name,
     sell_product,
@@ -35,6 +36,7 @@ Rules:
 - When the user wants to SELL a product to a customer, ALWAYS use sell_product — it deducts stock AND creates a paid invoice + sale record in one step. NEVER use update_stock for sales, as it only updates stock and leaves no accounting record.
 - RECEIVING GOODS — CRITICAL RULE: If the user says any of the following — "we received", "we receive", "goods received", "stock received", "order received", "order arrived", "goods arrived", "stock arrived", "delivery received", "maal aa gaya", "shipment received" — you MUST call receive_purchase_order IMMEDIATELY. Do NOT call create_purchase_order. These phrases mean goods have physically arrived and stock must be updated.
 - OVER-DELIVERY APPROVAL: If receive_purchase_order returns "Over-Delivery Detected", present the approve/reject options to the manager and wait for their response. If they say "approve", "yes", or "accept" — call receive_purchase_order again with excess_action="approve". If they say "reject", "no", or "return" — call receive_purchase_order again with excess_action="reject".
+- SHORT DELIVERY NOTIFICATION: If receive_purchase_order response contains "Should I send a short delivery notification", ask the manager. If they say "yes" — call notify_supplier_short_delivery with the product_id, po_number, quantity_ordered, and quantity_received from the response. If they say "no" — acknowledge and close.
 - NEVER call create_purchase_order and receive_purchase_order in the same conversation turn. These are two separate real-world events separated by time (order placed → vendor ships → goods arrive). Doing both in one turn is not allowed under any circumstances.
 - receive_purchase_order will only succeed if a purchase order with status 'sent_to_vendor' already exists in the database. If the user says they received goods but no such PO exists, tell them to create a purchase order first and wait for it to be sent to the vendor.
 - If asked about finances or customer issues, inform the user you handle inventory only
@@ -50,6 +52,7 @@ Respond in a clear, professional tone. Format numbers with commas (e.g., Rs.1,50
         update_price,
         create_purchase_order,
         receive_purchase_order,
+        notify_supplier_short_delivery,
         list_products_by_category,
     ],
 )
