@@ -133,7 +133,8 @@ Routing is done via the OpenAI Agents SDK `handoff()` mechanism. The Triage Agen
 | `update_price` | Update a product's base selling price (supplier cost change, market adjustment) |
 | `sell_product` | Process a customer sale: deducts stock, creates paid invoice + sale record atomically |
 | `create_purchase_order` | Create a PO; auto-approves and emails vendor if under Rs.100,000 |
-| `receive_purchase_order` | Mark a PO as received and update stock in one step |
+| `receive_purchase_order` | Mark a PO as received and update stock. Detects over-delivery (asks approve/reject) and short delivery (asks to notify supplier) |
+| `notify_supplier_short_delivery` | Send a formal short delivery alert email to the supplier via Brevo |
 | `list_products_by_category` | List all products in a category |
 
 ### Accounting Agent
@@ -188,11 +189,29 @@ Agent creates PO
                                                     Vendor email sent ──▶ Status: sent_to_vendor
                                                               │
                                                               ▼
-                                               Agent confirms receipt ──▶ Status: received
-                                                    (stock updated)
+                                               Manager reports goods received
+                                                              │
+                                                 ┌────────────┼────────────┐
+                                                 ▼            ▼            ▼
+                                           Exact qty     Over-delivery  Short delivery
+                                           received      detected       detected
+                                                │              │              │
+                                                │         Manager:       Stock updated
+                                                │         approve/       + Agent asks:
+                                                │         reject         notify supplier?
+                                                │              │              │
+                                                └──────────────┴──────────────┘
+                                                              │
+                                                              ▼
+                                                     Status: received
+                                                       (stock updated)
 ```
 
 **Security rule:** `receive_purchase_order` only accepts POs with status `sent_to_vendor`. The agent is also instructed never to create a PO and immediately receive it in the same conversation turn.
+
+**Delivery mismatch rules:**
+- **Over-delivery:** Agent pauses and asks manager to approve (accept all units) or reject (accept PO quantity only, return excess) before updating stock.
+- **Short delivery:** Stock updated with actual received quantity. Agent then asks manager if they want to email the supplier — if yes, `notify_supplier_short_delivery` sends a formal alert via Brevo.
 
 ---
 
