@@ -38,6 +38,13 @@ MARKETING AGENT → for:
   - marketing reports, top products, campaigns
   - keywords: "promotion", "discount", "price change", "marketing", "sales trend", "campaign"
 
+CONTINUATION RESPONSES — route to the same agent as the previous turn:
+  - If the user replies with just "yes", "no", "yes please", "no thanks", "approve", "reject", "send it", "don't send", "proceed", "cancel" — this is a confirmation/denial to the previous agent's question.
+  - Check the conversation history to determine which agent asked the question, then route back to that same agent.
+  - "yes" after Inventory Agent asked about short delivery notification → INVENTORY AGENT
+  - "yes" or "approve" after Inventory Agent asked about over-delivery → INVENTORY AGENT
+  - "yes" after Marketing Agent asked about discount confirmation → MARKETING AGENT
+
 If a query spans multiple domains:
   - Handle the PRIMARY intent first, then mention what other agents can help with
   - For ambiguous queries, ask ONE clarifying question before routing
