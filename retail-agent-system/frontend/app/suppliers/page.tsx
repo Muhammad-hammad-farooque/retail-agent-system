@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getSuppliers, createSupplier } from '@/lib/api';
-import { Truck, RefreshCw, Plus, X, Mail, Phone } from 'lucide-react';
+import { Truck, RefreshCw, Plus, X, Mail, Phone, Search } from 'lucide-react';
 
 interface Supplier {
   id: number;
@@ -19,6 +19,7 @@ const EMPTY_FORM = { name: '', email: '', phone: '', address: '', contact_person
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -156,10 +157,22 @@ export default function SuppliersPage() {
         </div>
       )}
 
+      {/* Search */}
+      <div className="relative max-w-sm mb-5">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search suppliers by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         {loading ? (
           <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading suppliers...</div>
-        ) : suppliers.length === 0 ? (
+        ) : suppliers.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-gray-400">
             <Truck className="w-8 h-8 mb-2 opacity-40" />
             <span className="text-sm">No suppliers yet. Add one to enable vendor emails.</span>
@@ -177,7 +190,7 @@ export default function SuppliersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {suppliers.map((s) => (
+                {suppliers.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((s) => (
                   <tr key={s.id} className="hover:bg-gray-50 transition-colors">
                     <td className="py-3 pr-4 font-medium text-gray-900">{s.name}</td>
                     <td className="py-3 pr-4">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { getPurchaseOrders, updatePOStatus } from '@/lib/api';
-import { ClipboardList, RefreshCw, CheckCircle, XCircle, Clock, Send, PackageCheck } from 'lucide-react';
+import { ClipboardList, RefreshCw, CheckCircle, XCircle, Clock, Send, PackageCheck, Search } from 'lucide-react';
 
 interface PurchaseOrder {
   id: number;
@@ -46,6 +46,7 @@ export default function PurchaseOrdersPage() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [updating, setUpdating] = useState<number | null>(null);
 
   const load = () => {
@@ -97,6 +98,18 @@ export default function PurchaseOrdersPage() {
         </button>
       </div>
 
+      {/* Search */}
+      <div className="relative max-w-sm mb-4">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search by PO number..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Status filter */}
       <div className="flex gap-2 flex-wrap mb-5">
         {STATUS_FILTERS.map((s) => (
@@ -138,7 +151,7 @@ export default function PurchaseOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {orders.map((o) => (
+                {orders.filter(o => o.order_number.toLowerCase().includes(searchQuery.toLowerCase())).map((o) => (
                   <tr key={o.id} className="hover:bg-gray-50 transition-colors">
                     <td className="py-3 pr-4 font-mono text-xs text-gray-600">{o.order_number}</td>
                     <td className="py-3 pr-4 text-gray-500">#{o.product_id}</td>

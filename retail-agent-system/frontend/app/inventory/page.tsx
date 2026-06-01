@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getProducts, getCriticalStock } from '@/lib/api';
 import ProductTable from '@/components/ProductTable';
 import AlertBanner from '@/components/AlertBanner';
-import { Package, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Package, AlertTriangle, RefreshCw, Search } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -25,6 +25,7 @@ export default function InventoryPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'critical'>('all');
   const [category, setCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
 
@@ -72,6 +73,18 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {/* Search */}
+      <div className="relative max-w-sm mb-5">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search products by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
       {/* Tabs */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit mb-5">
         <button
@@ -115,7 +128,9 @@ export default function InventoryPage() {
 
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         <ProductTable
-          products={activeTab === 'all' ? products : critical}
+          products={(activeTab === 'all' ? products : critical).filter(p =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase())
+          )}
           loading={loading}
         />
 

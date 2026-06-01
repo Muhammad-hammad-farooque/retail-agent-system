@@ -11,6 +11,7 @@ from ..models.user import User
 from ..agents.triage_agent import triage_agent
 from ..guardrails.input_guardrails import check_input
 from ..guardrails.output_guardrails import check_output
+from ..models.chat_message import ChatMessage
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -35,8 +36,22 @@ async def run_agent_task(
 
     try:
         today = datetime.now(timezone.utc).strftime("%A, %d %B %Y")
-        query_with_date = f"{payload.query}\n\n(Today's date: {today})"
-        result = await Runner.run(triage_agent, input=query_with_date)
+
+        # Fetch last 10 messages for conversation context (5 exchanges)
+        history = (
+            db.query(ChatMessage)
+            .filter(ChatMessage.user_id == current_user.id)
+            .order_by(ChatMessage.created_at.desc())
+            .limit(10)
+            .all()
+        )
+        history.reverse()  # oldest first
+
+        # Build messages list with full history + current query
+        messages = [{"role": msg.role.value, "content": msg.content} for msg in history]
+        messages.append({"role": "user", "content": f"{payload.query}\n\n(Today's date: {today})"})
+
+        result = await Runner.run(triage_agent, input=messages)
 
         agent_used = "triage_agent"
         if result.last_agent:

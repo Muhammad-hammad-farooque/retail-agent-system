@@ -15,29 +15,23 @@ interface Customer {
   created_at: string;
 }
 
-const PAGE_SIZE = 20;
-
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [query, setQuery] = useState('');
-  const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const load = (q = query, p = page) => {
+  const load = () => {
     setLoading(true);
-    getCustomers({ skip: p * PAGE_SIZE, limit: PAGE_SIZE, ...(q && { search: q }) })
+    getCustomers({ limit: 500 })
       .then((res) => setCustomers(res.data))
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); }, [query, page]);
+  useEffect(() => { load(); }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(0);
-    setQuery(search);
-  };
+  const filtered = customers.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="p-8">
@@ -47,7 +41,7 @@ export default function CustomersPage() {
           <p className="text-sm text-gray-500 mt-1">Customer profiles and loyalty points</p>
         </div>
         <button
-          onClick={() => load()}
+          onClick={load}
           className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
@@ -56,41 +50,24 @@ export default function CustomersPage() {
       </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name..."
-            className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Search
-        </button>
-        {query && (
-          <button
-            type="button"
-            onClick={() => { setSearch(''); setQuery(''); setPage(0); }}
-            className="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50"
-          >
-            Clear
-          </button>
-        )}
-      </form>
+      <div className="relative max-w-sm mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search customers by name..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
       <div className="bg-white rounded-xl border border-gray-100 p-6">
         {loading ? (
           <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading customers...</div>
-        ) : customers.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-gray-400">
             <Users className="w-8 h-8 mb-2 opacity-40" />
-            <span className="text-sm">No customers found.</span>
+            <span className="text-sm">{searchQuery ? `No customers matching "${searchQuery}"` : 'No customers found.'}</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -111,7 +88,7 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {customers.map((c) => (
+                {filtered.map((c) => (
                   <tr key={c.id} className="hover:bg-gray-50 transition-colors">
                     <td className="py-3 pr-4 text-gray-400 text-xs">#{c.id}</td>
                     <td className="py-3 pr-4 font-medium text-gray-900">{c.name}</td>
@@ -139,24 +116,9 @@ export default function CustomersPage() {
             </table>
           </div>
         )}
-
-        {!loading && (
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-50">
-            <button
-              disabled={page === 0}
-              onClick={() => setPage((p) => p - 1)}
-              className="text-sm text-gray-500 hover:text-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              ← Previous
-            </button>
-            <span className="text-xs text-gray-400">Page {page + 1}</span>
-            <button
-              disabled={customers.length < PAGE_SIZE}
-              onClick={() => setPage((p) => p + 1)}
-              className="text-sm text-gray-500 hover:text-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Next →
-            </button>
+        {!loading && filtered.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400">
+            Showing {filtered.length} of {customers.length} customers
           </div>
         )}
       </div>

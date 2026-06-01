@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { getInvoices, getAccountingSummary, getPurchaseOrders, getPurchaseSummary } from '@/lib/api';
 import {
   DollarSign, Receipt, TrendingUp, RefreshCw,
-  ShoppingCart, PackageCheck, Banknote,
+  ShoppingCart, PackageCheck, Banknote, Search,
 } from 'lucide-react';
 
 interface Invoice {
@@ -55,11 +55,13 @@ export default function AccountingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [salesSummary, setSalesSummary] = useState<SalesSummary | null>(null);
   const [salesLoading, setSalesLoading] = useState(true);
+  const [invoiceSearch, setInvoiceSearch] = useState('');
 
   // Purchases state
   const [purchases, setPurchases] = useState<PurchaseOrder[]>([]);
   const [purchaseSummary, setPurchaseSummary] = useState<PurchaseSummary | null>(null);
   const [purchasesLoading, setPurchasesLoading] = useState(true);
+  const [poSearch, setPoSearch] = useState('');
 
   const loadSales = () => {
     setSalesLoading(true);
@@ -181,6 +183,18 @@ export default function AccountingPage() {
             </div>
           )}
 
+          {/* Invoice Search */}
+          <div className="relative max-w-sm mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by invoice number..."
+              value={invoiceSearch}
+              onChange={(e) => setInvoiceSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             {salesLoading ? (
               <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
@@ -203,7 +217,7 @@ export default function AccountingPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {invoices.map((inv) => (
+                    {invoices.filter(inv => inv.invoice_number.toLowerCase().includes(invoiceSearch.toLowerCase())).map((inv) => (
                       <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
                         <td className="py-3 pr-4 font-mono text-xs text-gray-600">{inv.invoice_number}</td>
                         <td className="py-3 pr-4 text-gray-500">#{inv.customer_id}</td>
@@ -272,6 +286,18 @@ export default function AccountingPage() {
             </div>
           )}
 
+          {/* PO Search */}
+          <div className="relative max-w-sm mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by order number..."
+              value={poSearch}
+              onChange={(e) => setPoSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           <div className="bg-white rounded-xl border border-gray-100 p-6">
             {purchasesLoading ? (
               <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
@@ -297,7 +323,7 @@ export default function AccountingPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {purchases.map((po) => (
+                    {purchases.filter(po => po.order_number.toLowerCase().includes(poSearch.toLowerCase())).map((po) => (
                       <tr key={po.id} className="hover:bg-gray-50 transition-colors">
                         <td className="py-3 pr-4 font-mono text-xs text-gray-600">{po.order_number}</td>
                         <td className="py-3 pr-4 text-gray-500">#{po.product_id}</td>
