@@ -17,7 +17,7 @@ interface Product {
   supplier: string;
 }
 
-const CATEGORIES = ['All', 'Electronics', 'Clothing', 'Food', 'Furniture', 'Cosmetics', 'Sports', 'Stationery'];
+const CATEGORIES = ['All', 'Electronics', 'Clothing', 'Groceries', 'Beauty', 'Books', 'Home & Kitchen', 'Sports', 'Personal Care'];
 
 export default function InventoryPage() {
   const [products, setProducts] = useState<Product[]>([]);
