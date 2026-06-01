@@ -177,7 +177,7 @@ export default function SalesDashboardPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Sales Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Live sales overview — auto-refreshes every 30s</p>
+          <p className="text-sm text-gray-500 mt-1">Live sales overview</p>
         </div>
         <div className="flex items-center gap-3">
           {lastUpdated && (
