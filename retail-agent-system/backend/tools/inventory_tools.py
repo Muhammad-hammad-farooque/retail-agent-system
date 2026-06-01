@@ -92,12 +92,43 @@ def add_product(
     quantity: int,
     reorder_level: int = 10,
     supplier: Optional[str] = None,
+    supplier_email: Optional[str] = None,
+    supplier_phone: Optional[str] = None,
+    supplier_contact: Optional[str] = None,
 ) -> str:
-    """Add a new product to the inventory."""
+    """Add a new product to the inventory.
+    If supplier_email, supplier_phone, or supplier_contact are provided alongside supplier name,
+    the supplier record is automatically created or updated in the suppliers table."""
     db = _db()
     try:
         if db.query(Product).filter(Product.sku == sku).first():
             return f"Product with SKU '{sku}' already exists."
+
+        # Create or update supplier record if details provided
+        supplier_note = ""
+        if supplier and (supplier_email or supplier_phone or supplier_contact):
+            existing = db.query(Supplier).filter(
+                Supplier.name.ilike(f"%{supplier}%"),
+                Supplier.is_active == True,
+            ).first()
+            if existing:
+                if supplier_email:
+                    existing.email = supplier_email
+                if supplier_phone:
+                    existing.phone = supplier_phone
+                if supplier_contact:
+                    existing.contact_person = supplier_contact
+                supplier_note = f"Supplier '{existing.name}' record updated."
+            else:
+                new_supplier = Supplier(
+                    name=supplier,
+                    email=supplier_email or "",
+                    phone=supplier_phone,
+                    contact_person=supplier_contact,
+                )
+                db.add(new_supplier)
+                supplier_note = f"Supplier '{supplier}' added to suppliers table."
+
         product = Product(
             name=name, sku=sku, category=category,
             price=price, cost_price=cost_price,
@@ -107,7 +138,20 @@ def add_product(
         db.add(product)
         db.commit()
         db.refresh(product)
-        return f"Product '{name}' added successfully with ID {product.id}."
+
+        result = (
+            f"Product Added Successfully:\n"
+            f"Product  : {name} (ID: {product.id})\n"
+            f"SKU      : {sku}\n"
+            f"Category : {category}\n"
+            f"Price    : Rs.{price:,.0f}\n"
+            f"Cost     : Rs.{cost_price:,.0f}\n"
+            f"Stock    : {quantity} units\n"
+            f"Supplier : {supplier or 'Not specified'}"
+        )
+        if supplier_note:
+            result += f"\n{supplier_note}"
+        return result
     finally:
         db.close()
 
