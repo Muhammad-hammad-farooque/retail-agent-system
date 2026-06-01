@@ -4,6 +4,7 @@ from typing import Optional
 
 from ..database import get_db
 from ..models.purchase_order import PurchaseOrder, PurchaseOrderStatus
+from ..models.product import Product
 from ..models.supplier import Supplier
 from ..models.notification import Notification, NotificationType
 from ..models.user import User
@@ -95,6 +96,22 @@ def update_po_status(
                 po.status = PurchaseOrderStatus.approved
         else:
             po.status = PurchaseOrderStatus.approved
+    elif status == PurchaseOrderStatus.received:
+        # Update stock when marked received from the UI
+        product = db.query(Product).filter(Product.id == po.product_id).first()
+        if product:
+            old_qty = product.quantity
+            product.quantity = old_qty + po.quantity
+            po.status = PurchaseOrderStatus.received
+            db.add(Notification(
+                type=NotificationType.purchase_order,
+                title="Stock Received",
+                message=f"PO {po.order_number} marked received. {po.quantity} units of {product.name} added. Stock: {old_qty} -> {product.quantity}",
+                reference_id=po.product_id,
+                reference_type="product",
+            ))
+        else:
+            po.status = PurchaseOrderStatus.received
     else:
         po.status = status
 
