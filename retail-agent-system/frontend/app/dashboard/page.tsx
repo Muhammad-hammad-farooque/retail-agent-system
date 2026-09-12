@@ -29,8 +29,8 @@ export default function DashboardPage() {
   return (
     <div className="p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <h1 className="text-2xl font-bold text-ash-800">Dashboard</h1>
+        <p className="text-sm text-ash-600 mt-1">
           Real-time overview of your retail store
         </p>
       </div>
@@ -38,7 +38,7 @@ export default function DashboardPage() {
       <AlertBanner />
 
       {error && (
-        <div className="bg-red-50 border border-red-100 text-red-700 rounded-lg px-4 py-3 text-sm mb-6">
+        <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm mb-6">
           {error}
         </div>
       )}
@@ -46,7 +46,7 @@ export default function DashboardPage() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-gray-100 rounded-xl h-28 animate-pulse" />
+            <div key={i} className="bg-ash-100 rounded-xl h-28 animate-pulse" />
           ))}
         </div>
       ) : kpis ? (
@@ -57,36 +57,36 @@ export default function DashboardPage() {
               value={kpis.total_products}
               subtitle="Active SKUs"
               icon={<Package className="w-5 h-5" />}
-              color="blue"
+              color="brand"
             />
             <KpiCard
               title="Low Stock Alerts"
               value={kpis.low_stock_alerts}
               subtitle="Need reorder"
               icon={<AlertTriangle className="w-5 h-5" />}
-              color={kpis.low_stock_alerts > 0 ? 'red' : 'green'}
+              color={kpis.low_stock_alerts > 0 ? 'amber' : 'emerald'}
             />
             <KpiCard
               title="Monthly Revenue"
               value={`Rs. ${(kpis.monthly_revenue_pkr || 0).toLocaleString()}`}
               subtitle="Last 30 days"
               icon={<DollarSign className="w-5 h-5" />}
-              color="green"
+              color="emerald"
             />
             <KpiCard
               title="Weekly Revenue"
               value={`Rs. ${(kpis.weekly_revenue_pkr || 0).toLocaleString()}`}
               subtitle="Last 7 days"
               icon={<TrendingUp className="w-5 h-5" />}
-              color="purple"
+              color="brand"
             />
           </div>
 
           {kpis.top_categories && kpis.top_categories.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-100 p-6">
+            <div className="bg-white rounded-xl border border-ash-200 p-6">
               <div className="flex items-center gap-2 mb-4">
-                <BarChart3 className="w-5 h-5 text-gray-500" />
-                <h2 className="text-base font-semibold text-gray-800">
+                <BarChart3 className="w-5 h-5 text-brand-700" />
+                <h2 className="text-base font-semibold text-ash-800">
                   Top Categories by Revenue
                 </h2>
               </div>
@@ -97,14 +97,14 @@ export default function DashboardPage() {
                   return (
                     <div key={i}>
                       <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-700 font-medium">{cat.category}</span>
-                        <span className="text-gray-500">
+                        <span className="text-ash-700 font-medium">{cat.category}</span>
+                        <span className="text-ash-600">
                           Rs. {cat.revenue.toLocaleString()}
                         </span>
                       </div>
-                      <div className="bg-gray-100 rounded-full h-2">
+                      <div className="bg-ash-100 rounded-full h-2">
                         <div
-                          className="bg-blue-500 h-2 rounded-full transition-all"
+                          className="bg-brand-600 h-2 rounded-full transition-all"
                           style={{ width: `${pct}%` }}
                         />
                       </div>

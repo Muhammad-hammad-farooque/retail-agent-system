@@ -16,15 +16,15 @@ interface Complaint {
 const STATUS_OPTIONS = ['received', 'in_progress', 'resolved'];
 
 const statusStyle: Record<string, string> = {
-  received:    'bg-yellow-50 text-yellow-700',
-  in_progress: 'bg-blue-50 text-blue-700',
-  resolved:    'bg-green-50 text-green-700',
+  received:    'bg-amber-50 text-amber-700',
+  in_progress: 'bg-brand-50 text-brand-700',
+  resolved:    'bg-emerald-50 text-emerald-700',
 };
 
 const statusIcon: Record<string, React.ReactNode> = {
-  received:    <AlertCircle className="w-3.5 h-3.5 text-yellow-500" />,
-  in_progress: <Clock className="w-3.5 h-3.5 text-blue-500" />,
-  resolved:    <CheckCircle className="w-3.5 h-3.5 text-green-500" />,
+  received:    <AlertCircle className="w-3.5 h-3.5 text-amber-700" />,
+  in_progress: <Clock className="w-3.5 h-3.5 text-brand-500" />,
+  resolved:    <CheckCircle className="w-3.5 h-3.5 text-emerald-700" />,
 };
 
 export default function ComplaintsPage() {
@@ -60,12 +60,12 @@ export default function ComplaintsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Complaints</h1>
-          <p className="text-sm text-gray-500 mt-1">Customer complaints — resolving sends email automatically</p>
+          <h1 className="text-2xl font-bold text-ash-900">Complaints</h1>
+          <p className="text-sm text-ash-600 mt-1">Customer complaints — resolving sends email automatically</p>
         </div>
         <button
           onClick={load}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          className="flex items-center gap-2 text-sm text-ash-600 hover:text-ash-800 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
           Refresh
@@ -80,8 +80,8 @@ export default function ComplaintsPage() {
             onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
               statusFilter === s
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'
+                ? 'bg-brand-600 text-white'
+                : 'bg-white text-ash-600 border border-ash-200 hover:border-brand-300'
             }`}
           >
             {s ? s.replace('_', ' ') : 'All'}
@@ -89,11 +89,11 @@ export default function ComplaintsPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl border border-ash-100 p-6">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading complaints...</div>
+          <div className="flex items-center justify-center h-40 text-ash-500 text-sm">Loading complaints...</div>
         ) : complaints.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-40 text-ash-500">
             <MessageCircleWarning className="w-8 h-8 mb-2 opacity-40" />
             <span className="text-sm">No complaints found.</span>
           </div>
@@ -101,7 +101,7 @@ export default function ComplaintsPage() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-left text-xs uppercase text-gray-500 font-semibold">
+                <tr className="border-b border-ash-100 text-left text-xs uppercase text-ash-600 font-semibold">
                   <th className="pb-3 pr-4">Reference</th>
                   <th className="pb-3 pr-4">Customer ID</th>
                   <th className="pb-3 pr-4">Complaint</th>
@@ -110,20 +110,20 @@ export default function ComplaintsPage() {
                   <th className="pb-3">Update</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-ash-100">
                 {complaints.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-3 pr-4 font-mono text-xs text-gray-500">{c.reference}</td>
-                    <td className="py-3 pr-4 text-gray-500">#{c.customer_id}</td>
-                    <td className="py-3 pr-4 text-gray-800 max-w-xs truncate" title={c.complaint}>
+                  <tr key={c.id} className="hover:bg-ash-50 transition-colors">
+                    <td className="py-3 pr-4 font-mono text-xs text-ash-600">{c.reference}</td>
+                    <td className="py-3 pr-4 text-ash-600">#{c.customer_id}</td>
+                    <td className="py-3 pr-4 text-ash-800 max-w-xs truncate" title={c.complaint}>
                       {c.complaint}
                     </td>
-                    <td className="py-3 pr-4 text-xs text-gray-400">
+                    <td className="py-3 pr-4 text-xs text-ash-500">
                       {new Date(c.created_at).toLocaleDateString('en-GB')}
                     </td>
                     <td className="py-3 pr-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                        statusStyle[c.status] || 'bg-gray-50 text-gray-600'
+                        statusStyle[c.status] || 'bg-ash-50 text-ash-600'
                       }`}>
                         {statusIcon[c.status]}
                         {c.status.replace('_', ' ')}
@@ -134,7 +134,7 @@ export default function ComplaintsPage() {
                         value={c.status}
                         disabled={updating === c.id || c.status === 'resolved'}
                         onChange={(e) => handleStatusChange(c.id, e.target.value)}
-                        className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-xs border border-ash-200 rounded-lg px-2 py-1.5 bg-white text-ash-700 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {STATUS_OPTIONS.map((s) => (
                           <option key={s} value={s}>{s.replace('_', ' ')}</option>

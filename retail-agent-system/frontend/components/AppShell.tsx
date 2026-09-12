@@ -17,7 +17,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
+        <Loader2 className="w-6 h-6 text-brand-500 animate-spin" />
       </div>
     );
   }

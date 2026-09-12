@@ -1,0 +1,376 @@
+/* ============================================================
+   Agent UI — Aubergine & Ash (light)
+   Same structure as the dark build; palette swapped to the
+   project tokens so /agent matches the rest of the app.
+   ============================================================ */
+
+.root {
+  --bg: #faf8fa;          /* ash-50   canvas */
+  --surface: #ffffff;
+  --line: #ded5e0;        /* ash-200  */
+  --line-soft: #ebe5ec;   /* ash-100  */
+  --ink: #460c34;         /* ash-900  */
+  --muted: #5b4f58;       /* ash-600  */
+  --placeholder: #72686f; /* ash-500  */
+  --brand: #8d4893;       /* brand-600 */
+  --brand-ink: #742279;   /* brand-700 */
+  --brand-deep: #5f0264;  /* brand-800 */
+  --brand-tint: #ebd7ef;  /* brand-100 */
+  --brand-tint-soft: #f7f0f9; /* brand-50 */
+  --brand-line: #d6b8db;  /* brand-200 */
+  --user-ink: #51084a;    /* brand-900 */
+
+  --grad: linear-gradient(90deg,
+    #c197c6 0%, #a770ad 24%, #8d4893 52%, #742279 78%, #5f0264 100%);
+
+  display: flex;
+  flex-direction: column;
+  /* AppShell's <main> sits in a min-h-screen flex row, so a percentage
+     height has nothing to resolve against — pin to the viewport. */
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Inter", "Helvetica Neue", Arial, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ---------------- Header ---------------- */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: clamp(14px, 1.6vw, 22px) clamp(16px, 2.2vw, 34px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.logo {
+  width: clamp(30px, 2.6vw, 40px);
+  height: clamp(30px, 2.6vw, 40px);
+  flex: none;
+}
+
+.headerTitle {
+  margin: 0;
+  font-size: clamp(1rem, 1.25vw, 1.2rem);
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.012em;
+}
+
+.headerSub {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.004em;
+}
+
+/* Chat column inside the page shell */
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------------- Messages ---------------- */
+.stream {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: clamp(16px, 2vw, 30px) clamp(16px, 2.2vw, 34px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.stream::-webkit-scrollbar { width: 8px; }
+.stream::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+
+.inner {
+  width: 100%;
+  max-width: 814px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.2vw, 18px);
+}
+
+.msg { display: flex; gap: 0.6em; align-items: flex-start; }
+.msgUser { justify-content: flex-end; }
+.msgAi { justify-content: flex-start; }
+
+.avatar {
+  width: clamp(26px, 2.1vw, 32px);
+  height: clamp(26px, 2.1vw, 32px);
+  border-radius: 50%;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.avatarUser { background: var(--brand-tint); }
+.avatarUser svg { width: 66%; height: 66%; }
+.avatarAi { background: var(--grad); }
+
+.bubble {
+  border-radius: clamp(11px, 1.1vw, 15px);
+  max-width: 78%;
+  padding: clamp(9px, 1vw, 14px) clamp(12px, 1.25vw, 18px);
+  font-size: clamp(0.8rem, 1.12vw, 1.06rem);
+  line-height: 1.42;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  /* agent replies: white card on the canvas */
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+/* the person's own turn, tinted with the brand */
+.msgUser .bubble {
+  background: var(--brand-tint);
+  border-color: var(--brand-line);
+  color: var(--user-ink);
+}
+
+.bubbleError {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.stamp { margin-top: 5px; font-size: 0.68rem; color: var(--muted); opacity: 0.75; }
+.stampUser { text-align: right; }
+
+.spinner {
+  width: 1.05em;
+  height: 1.05em;
+  color: var(--brand);
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------------- Suggestions ---------------- */
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+  max-width: 814px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 2.2vw, 34px) 10px;
+}
+
+.suggestion {
+  background: var(--brand-tint-soft);
+  border: 1px solid var(--brand-line);
+  color: var(--brand-ink);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.suggestion:hover { background: var(--brand-tint); }
+.suggestion:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------------- Composer ---------------- */
+.composerWrap {
+  padding: 0 clamp(16px, 2.2vw, 34px) clamp(8px, 0.9vw, 14px);
+  display: flex;
+  justify-content: center;
+  isolation: isolate;
+  flex-shrink: 0;
+}
+
+/* No transform/filter/opacity here — the glow must stay behind this box. */
+.composer {
+  position: relative;
+  width: 100%;
+  max-width: 814px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: clamp(14px, 1.32vw, 22px);
+  box-shadow: 0 1px 2px rgba(70, 12, 52, 0.05), 0 12px 32px -16px rgba(70, 12, 52, 0.28);
+  padding: clamp(14px, 1.5vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.2vw, 16px);
+}
+
+.glow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: calc(-1 * clamp(3px, 0.35vw, 6px));
+  border-radius: inherit;
+  background: var(--grad);
+  filter: blur(0.4px);
+  opacity: 0.95;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  resize: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: clamp(0.92rem, 1.15vw, 1.1rem);
+  line-height: 1.45;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.input::placeholder { color: var(--placeholder); }
+.input:disabled { opacity: 0.55; }
+
+.controls { display: flex; align-items: center; gap: clamp(8px, 1.08vw, 18px); }
+
+.chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+.chip:hover {
+  background: var(--brand-tint-soft);
+  border-color: var(--brand-line);
+  color: var(--brand-ink);
+}
+
+.chipRound {
+  width: clamp(38px, 3.23vw, 48px);
+  height: clamp(38px, 3.23vw, 48px);
+  border-radius: 50%;
+  flex: none;
+}
+.chipRound svg { width: 45%; height: 45%; }
+
+.chipPill {
+  height: clamp(38px, 3.23vw, 48px);
+  border-radius: 999px;
+  padding: 0 clamp(12px, 1.4vw, 20px);
+  gap: 8px;
+  font-size: clamp(0.85rem, 1.05vw, 1rem);
+  white-space: nowrap;
+}
+.chipPill svg { width: 1.05em; height: 1.05em; flex: none; }
+
+.chipOn {
+  background: var(--brand-tint);
+  border-color: var(--brand-line);
+  color: var(--brand-deep);
+  font-weight: 500;
+}
+
+.spacer { flex: 1; }
+
+.mic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  width: clamp(38px, 3.23vw, 48px);
+  height: clamp(38px, 3.23vw, 48px);
+  flex: none;
+  cursor: pointer;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.mic:hover { color: var(--brand-ink); background: var(--brand-tint-soft); }
+.mic svg { width: 52%; height: 52%; }
+
+.send {
+  --send-ring: clamp(1.4px, 0.12vw, 2px);
+  position: relative;
+  width: clamp(40px, 3.35vw, 50px);
+  height: clamp(40px, 3.35vw, 50px);
+  flex: none;
+  border-radius: 50%;
+  padding: var(--send-ring);
+  background: var(--grad);
+  display: flex;
+  border: 0;
+  cursor: pointer;
+  transition: filter 0.18s ease, transform 0.12s ease, opacity 0.18s ease;
+}
+.send::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--grad);
+  animation: sweep 10s linear infinite;
+}
+.sendInner {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  border-radius: 50%;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sendInner svg { width: 44%; height: 44%; }
+.send:hover:not(:disabled) { filter: brightness(1.06); }
+.send:active:not(:disabled) { transform: scale(0.95); }
+.send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* The ring light travels; the button body never moves. */
+@keyframes sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ---------------- Entrance ---------------- */
+.enter {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.enterComposer {
+  opacity: 0;
+  transform: translateY(22px) scale(0.985);
+  animation: riseComposer 0.95s cubic-bezier(0.16, 1, 0.3, 1) 0.12s forwards;
+}
+@keyframes rise {
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes riseComposer {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 680px) {
+  .bubble { max-width: 86%; }
+  .chipRound, .mic { width: 42px; height: 42px; }
+  .chipPill { height: 42px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .send::before,
+  .spinner {
+    animation: none;
+  }
+  .enter,
+  .enterComposer {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
