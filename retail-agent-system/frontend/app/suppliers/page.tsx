@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getSuppliers, createSupplier } from '@/lib/api';
 import { Truck, RefreshCw, Plus, X, Mail, Phone, Search } from 'lucide-react';
 
@@ -25,14 +25,30 @@ export default function SuppliersPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
+  // Debounced copy of searchQuery — searching runs on the server, so we wait
+  // for a pause in typing instead of firing a request per keystroke.
+  const [searchTerm, setSearchTerm] = useState('');
+  // Guards against a slow earlier response overwriting a newer one.
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchTerm(searchQuery.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const load = () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
-    getSuppliers()
-      .then((res) => setSuppliers(res.data))
-      .finally(() => setLoading(false));
+    getSuppliers({ limit: 200, ...(searchTerm && { search: searchTerm }) })
+      .then((res) => {
+        if (currentRequest === requestId.current) setSuppliers(res.data);
+      })
+      .finally(() => {
+        if (currentRequest === requestId.current) setLoading(false);
+      });
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [searchTerm]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -162,7 +178,7 @@ export default function SuppliersPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ash-500" />
         <input
           type="text"
-          placeholder="Search suppliers by name..."
+          placeholder="Search by name, email or contact..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-4 py-2 text-sm border border-ash-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -172,10 +188,14 @@ export default function SuppliersPage() {
       <div className="bg-white rounded-xl border border-ash-100 p-6">
         {loading ? (
           <div className="flex items-center justify-center h-40 text-ash-500 text-sm">Loading suppliers...</div>
-        ) : suppliers.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+        ) : suppliers.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-ash-500">
             <Truck className="w-8 h-8 mb-2 opacity-40" />
-            <span className="text-sm">No suppliers yet. Add one to enable vendor emails.</span>
+            <span className="text-sm">
+              {searchTerm
+                ? `No suppliers matching "${searchTerm}"`
+                : 'No suppliers yet. Add one to enable vendor emails.'}
+            </span>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -190,7 +210,7 @@ export default function SuppliersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-ash-100">
-                {suppliers.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).map((s) => (
+                {suppliers.map((s) => (
                   <tr key={s.id} className="hover:bg-ash-50 transition-colors">
                     <td className="py-3 pr-4 font-medium text-ash-900">{s.name}</td>
                     <td className="py-3 pr-4">

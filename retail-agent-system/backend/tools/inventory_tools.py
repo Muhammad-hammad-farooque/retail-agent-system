@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from agents import function_tool
 from ..database import SessionLocal
+from ..search_utils import MAX_SEARCH_RESULTS, normalize_search_text, product_search_filter
 from ..models.product import Product
 from ..models.supplier import Supplier
 from ..models.purchase_order import PurchaseOrder, PurchaseOrderStatus
@@ -186,7 +187,9 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
                 f"Status       : {existing.status.value.upper()}"
             )
 
-        unit_cost = product.price
+        # A purchase order is what we pay the supplier, so use cost_price.
+        # Using product.price (the selling price) inflated POs by the margin.
+        unit_cost = product.cost_price
         total_cost = unit_cost * quantity
         order_number = f"PO-{product_id}-{time.strftime('%Y%m%d%H%M%S')}"
 
@@ -243,7 +246,7 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
                 f"Product      : {product.name} (SKU: {product.sku})\n"
                 f"Supplier     : {product.supplier or 'Not specified'}{' (linked)' if supplier_id else ''}\n"
                 f"Quantity     : {quantity} units\n"
-                f"Unit Cost    : Rs.{product.cost_price:,.0f}\n"
+                f"Unit Cost    : Rs.{unit_cost:,.0f}\n"
                 f"Total Cost   : Rs.{total_cost:,.0f}\n"
                 f"Status       : {po.status.value.upper()}\n"
                 f"Approval     : {approval_note}"
@@ -264,7 +267,7 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
                 f"Product      : {product.name} (SKU: {product.sku})\n"
                 f"Supplier     : {product.supplier or 'Not specified'}{' (linked)' if supplier_id else ''}\n"
                 f"Quantity     : {quantity} units\n"
-                f"Unit Cost    : Rs.{product.cost_price:,.0f}\n"
+                f"Unit Cost    : Rs.{unit_cost:,.0f}\n"
                 f"Total Cost   : Rs.{total_cost:,.0f}\n"
                 f"Status       : PENDING APPROVAL\n"
                 f"Note         : Total exceeds Rs.100,000 — go to Purchase Orders page to approve."
@@ -278,16 +281,33 @@ def create_purchase_order(product_id: int, quantity: int) -> str:
 
 @function_tool
 def search_product_by_name(name: str) -> str:
-    """Search products by name (partial, case-insensitive). Returns matching products with their IDs so you can use them in other tools."""
+    """Search active products by name or SKU (case-insensitive). Every word must
+    appear in the name or SKU, in any order, so "loreal serum" and "BEAU-001" both
+    work. Returns matching products with their IDs so you can use them in other tools."""
+    term = normalize_search_text(name)
+    if not term:
+        return "Please provide a product name or SKU to search for."
+
     db = _db()
     try:
-        products = db.query(Product).filter(
-            Product.name.ilike(f"%{name}%"),
-            Product.is_active == True,
-        ).all()
+        active = db.query(Product).filter(Product.is_active == True)
+
+        # An exact SKU is unambiguous, so return just that product.
+        products = active.filter(Product.sku.ilike(term)).all()
         if not products:
-            return f"No active products found matching '{name}'."
-        lines = [f"Products matching '{name}' ({len(products)} found):"]
+            products = (
+                active.filter(product_search_filter(Product, term))
+                .order_by(Product.name)
+                .limit(MAX_SEARCH_RESULTS + 1)
+                .all()
+            )
+
+        if not products:
+            return f"No active products found matching '{term}'."
+
+        truncated = len(products) > MAX_SEARCH_RESULTS
+        products = products[:MAX_SEARCH_RESULTS]
+        lines = [f"Products matching '{term}' ({len(products)}{'+' if truncated else ''} found):"]
         for p in products:
             status = "LOW STOCK" if p.quantity <= p.reorder_level else "OK"
             lines.append(
@@ -295,6 +315,8 @@ def search_product_by_name(name: str) -> str:
                 f"Stock: {p.quantity} units | Reorder Level: {p.reorder_level} | "
                 f"Cost: Rs.{p.cost_price:,.0f} | Status: {status}"
             )
+        if truncated:
+            lines.append(f"Showing the first {MAX_SEARCH_RESULTS}. Ask the user for a more specific name.")
         return "\n".join(lines)
     finally:
         db.close()

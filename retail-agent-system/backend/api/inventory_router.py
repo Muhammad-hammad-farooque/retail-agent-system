@@ -7,6 +7,7 @@ from ..models.product import Product
 from ..models.user import User
 from ..schemas.product import ProductCreate, ProductOut, ProductUpdate
 from ..auth.jwt_handler import get_current_user
+from ..search_utils import normalize_search_text, product_search_filter
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
@@ -16,13 +17,19 @@ def get_all_products(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     category: Optional[str] = None,
+    search: Optional[str] = Query(None, description="Match against product name or SKU"),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
     query = db.query(Product).filter(Product.is_active == True)
     if category:
         query = query.filter(Product.category == category)
-    return query.offset(skip).limit(limit).all()
+    if search:
+        term = normalize_search_text(search)
+        if term:
+            query = query.filter(product_search_filter(Product, term))
+    # Order explicitly: without it, paging can repeat or skip rows.
+    return query.order_by(Product.name).offset(skip).limit(limit).all()
 
 
 @router.get("/critical", response_model=List[ProductOut])

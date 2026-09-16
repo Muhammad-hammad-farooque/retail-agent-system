@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getProducts, getCriticalStock } from '@/lib/api';
 import ProductTable from '@/components/ProductTable';
 import AlertBanner from '@/components/AlertBanner';
@@ -26,25 +26,43 @@ export default function InventoryPage() {
   const [activeTab, setActiveTab] = useState<'all' | 'critical'>('all');
   const [category, setCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  // Debounced copy of searchQuery — searching runs on the server, so we wait
+  // for a pause in typing instead of firing a request per keystroke.
+  const [searchTerm, setSearchTerm] = useState('');
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 20;
+  // Guards against a slow earlier response overwriting a newer one.
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchTerm(searchQuery.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // A new search or category starts again from the first page.
+  useEffect(() => { setPage(0); }, [searchTerm, category]);
 
   const load = () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
     const params = {
       skip: page * PAGE_SIZE,
       limit: PAGE_SIZE,
       ...(category !== 'All' && { category }),
+      ...(searchTerm && { search: searchTerm }),
     };
     Promise.all([getProducts(params), getCriticalStock()])
       .then(([pRes, cRes]) => {
+        if (currentRequest !== requestId.current) return;
         setProducts(pRes.data);
         setCritical(cRes.data);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (currentRequest === requestId.current) setLoading(false);
+      });
   };
 
-  useEffect(() => { load(); }, [page, category]);
+  useEffect(() => { load(); }, [page, category, searchTerm]);
 
   return (
     <div className="p-8">
@@ -78,7 +96,7 @@ export default function InventoryPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ash-500" />
         <input
           type="text"
-          placeholder="Search products by name..."
+          placeholder="Search products by name or SKU..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-4 py-2 text-sm border border-ash-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -128,9 +146,14 @@ export default function InventoryPage() {
 
       <div className="bg-white rounded-xl border border-ash-100 p-6">
         <ProductTable
-          products={(activeTab === 'all' ? products : critical).filter(p =>
-            p.name.toLowerCase().includes(searchQuery.toLowerCase())
-          )}
+          products={
+            activeTab === 'all'
+              ? products // already filtered by the server
+              : critical.filter(p => {
+                  const q = searchTerm.toLowerCase();
+                  return !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q);
+                })
+          }
           loading={loading}
         />
 

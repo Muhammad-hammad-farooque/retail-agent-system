@@ -54,7 +54,7 @@ export const getTopProducts = (period: 'today' | 'week' | 'month' = 'week') =>
 export const getProfitSummary = () => api.get('/dashboard/profit-summary');
 
 // ── Inventory ─────────────────────────────────────────────────────────────────
-export const getProducts = (params?: { skip?: number; limit?: number; category?: string }) =>
+export const getProducts = (params?: { skip?: number; limit?: number; category?: string; search?: string }) =>
   api.get('/inventory/products', { params });
 
 export const getCriticalStock = () => api.get('/inventory/critical');
@@ -88,7 +88,7 @@ export const updateComplaintStatus = (id: number, status: string) =>
   api.patch(`/complaints/${id}/status`, null, { params: { status } });
 
 // ── Purchase Orders ───────────────────────────────────────────────────────────
-export const getPurchaseOrders = (params?: { skip?: number; limit?: number; status?: string }) =>
+export const getPurchaseOrders = (params?: { skip?: number; limit?: number; status?: string; search?: string }) =>
   api.get('/purchase-orders', { params });
 
 export const getPurchaseSummary = () => api.get('/purchase-orders/summary');
@@ -97,7 +97,7 @@ export const updatePOStatus = (id: number, status: string) =>
   api.patch(`/purchase-orders/${id}/status`, null, { params: { status } });
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
-export const getSuppliers = (params?: { skip?: number; limit?: number }) =>
+export const getSuppliers = (params?: { skip?: number; limit?: number; search?: string }) =>
   api.get('/suppliers', { params });
 
 export const createSupplier = (data: object) => api.post('/suppliers', data);

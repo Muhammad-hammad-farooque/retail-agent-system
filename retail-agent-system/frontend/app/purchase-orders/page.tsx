@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getPurchaseOrders, updatePOStatus } from '@/lib/api';
 import { ClipboardList, RefreshCw, CheckCircle, XCircle, Clock, Send, PackageCheck, Search } from 'lucide-react';
 
@@ -49,14 +49,34 @@ export default function PurchaseOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [updating, setUpdating] = useState<number | null>(null);
 
+  // Debounced copy of searchQuery - searching runs on the server, so we wait
+  // for a pause in typing instead of firing a request per keystroke.
+  const [searchTerm, setSearchTerm] = useState('');
+  // Guards against a slow earlier response overwriting a newer one.
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchTerm(searchQuery.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const load = () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
-    getPurchaseOrders(statusFilter ? { status: statusFilter } : {})
-      .then((res) => setOrders(res.data))
-      .finally(() => setLoading(false));
+    getPurchaseOrders({
+      limit: 200,
+      ...(statusFilter && { status: statusFilter }),
+      ...(searchTerm && { search: searchTerm }),
+    })
+      .then((res) => {
+        if (currentRequest === requestId.current) setOrders(res.data);
+      })
+      .finally(() => {
+        if (currentRequest === requestId.current) setLoading(false);
+      });
   };
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { load(); }, [statusFilter, searchTerm]);
 
   // Auto-refresh every 30 seconds to pick up agent-driven status changes
   useEffect(() => {
@@ -103,7 +123,7 @@ export default function PurchaseOrdersPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ash-500" />
         <input
           type="text"
-          placeholder="Search by PO number..."
+          placeholder="Search by PO number or supplier..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-4 py-2 text-sm border border-ash-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -151,7 +171,7 @@ export default function PurchaseOrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-ash-100">
-                {orders.filter(o => o.order_number.toLowerCase().includes(searchQuery.toLowerCase())).map((o) => (
+                {orders.map((o) => (
                   <tr key={o.id} className="hover:bg-ash-50 transition-colors">
                     <td className="py-3 pr-4 font-mono text-xs text-ash-600">{o.order_number}</td>
                     <td className="py-3 pr-4 text-ash-600">#{o.product_id}</td>
