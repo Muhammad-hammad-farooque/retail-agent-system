@@ -22,7 +22,7 @@ export default function CustomersPage() {
 
   const load = () => {
     setLoading(true);
-    getCustomers({ limit: 500 })
+    getCustomers({ limit: 200 })
       .then((res) => setCustomers(res.data))
       .finally(() => setLoading(false));
   };
@@ -37,12 +37,12 @@ export default function CustomersPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-          <p className="text-sm text-gray-500 mt-1">Customer profiles and loyalty points</p>
+          <h1 className="text-2xl font-bold text-ash-900">Customers</h1>
+          <p className="text-sm text-ash-600 mt-1">Customer profiles and loyalty points</p>
         </div>
         <button
           onClick={load}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          className="flex items-center gap-2 text-sm text-ash-600 hover:text-ash-800 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
           Refresh
@@ -51,21 +51,21 @@ export default function CustomersPage() {
 
       {/* Search */}
       <div className="relative max-w-sm mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ash-500" />
         <input
           type="text"
           placeholder="Search customers by name..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pl-9 pr-4 py-2 text-sm border border-ash-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl border border-ash-100 p-6">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading customers...</div>
+          <div className="flex items-center justify-center h-40 text-ash-500 text-sm">Loading customers...</div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-40 text-ash-500">
             <Users className="w-8 h-8 mb-2 opacity-40" />
             <span className="text-sm">{searchQuery ? `No customers matching "${searchQuery}"` : 'No customers found.'}</span>
           </div>
@@ -73,7 +73,7 @@ export default function CustomersPage() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-left text-xs uppercase text-gray-500 font-semibold">
+                <tr className="border-b border-ash-100 text-left text-xs uppercase text-ash-600 font-semibold">
                   <th className="pb-3 pr-4">ID</th>
                   <th className="pb-3 pr-4">Name</th>
                   <th className="pb-3 pr-4">Email</th>
@@ -87,25 +87,25 @@ export default function CustomersPage() {
                   <th className="pb-3">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-ash-100">
                 {filtered.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-3 pr-4 text-gray-400 text-xs">#{c.id}</td>
-                    <td className="py-3 pr-4 font-medium text-gray-900">{c.name}</td>
-                    <td className="py-3 pr-4 text-gray-500">{c.email || '—'}</td>
-                    <td className="py-3 pr-4 text-gray-500">{c.phone || '—'}</td>
-                    <td className="py-3 pr-4 text-right font-medium text-gray-800">
+                  <tr key={c.id} className="hover:bg-ash-50 transition-colors">
+                    <td className="py-3 pr-4 text-ash-500 text-xs">#{c.id}</td>
+                    <td className="py-3 pr-4 font-medium text-ash-900">{c.name}</td>
+                    <td className="py-3 pr-4 text-ash-600">{c.email || '—'}</td>
+                    <td className="py-3 pr-4 text-ash-600">{c.phone || '—'}</td>
+                    <td className="py-3 pr-4 text-right font-medium text-ash-800">
                       Rs. {(c.total_spent || 0).toLocaleString()}
                     </td>
                     <td className="py-3 pr-4 text-right">
-                      <span className="inline-flex items-center gap-1 text-yellow-700 font-semibold">
-                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-400" />
+                      <span className="inline-flex items-center gap-1 text-amber-700 font-semibold">
+                        <Star className="w-3 h-3 text-amber-700 fill-amber-400" />
                         {c.loyalty_points ?? 0}
                       </span>
                     </td>
                     <td className="py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        c.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'
+                        c.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-ash-100 text-ash-600'
                       }`}>
                         {c.is_active ? 'Active' : 'Inactive'}
                       </span>
@@ -117,7 +117,7 @@ export default function CustomersPage() {
           </div>
         )}
         {!loading && filtered.length > 0 && (
-          <div className="mt-3 pt-3 border-t border-gray-50 text-xs text-gray-400">
+          <div className="mt-3 pt-3 border-t border-ash-50 text-xs text-ash-500">
             Showing {filtered.length} of {customers.length} customers
           </div>
         )}

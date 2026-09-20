@@ -35,23 +35,23 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-brand-900 to-brand-700 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
         <div className="flex items-center gap-3 mb-8">
-          <div className="bg-blue-100 p-2.5 rounded-xl">
-            <Store className="w-7 h-7 text-blue-700" />
+          <div className="bg-brand-100 p-2.5 rounded-xl">
+            <Store className="w-7 h-7 text-brand-700" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Retail Agent System</h1>
-            <p className="text-xs text-gray-500">Powered by Agentic AI</p>
+            <h1 className="text-xl font-bold text-ash-900">Retail Agent System</h1>
+            <p className="text-xs text-ash-600">Powered by Agentic AI</p>
           </div>
         </div>
 
-        <h2 className="text-lg font-semibold text-gray-800 mb-6">Sign in to your account</h2>
+        <h2 className="text-lg font-semibold text-ash-800 mb-6">Sign in to your account</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-ash-700 mb-1.5">
               Username
             </label>
             <input
@@ -60,12 +60,12 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               required
               placeholder="Enter your username"
-              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg border border-ash-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-ash-700 mb-1.5">
               Password
             </label>
             <input
@@ -74,12 +74,12 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Enter your password"
-              className="w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-lg border border-ash-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             />
           </div>
 
           {error && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
+            <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-4 py-3">
               {error}
             </div>
           )}
@@ -87,7 +87,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-brand-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {loading ? 'Signing in...' : 'Sign In'}

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { runAgentTask, getChatHistory, saveChatMessage } from '@/lib/api';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import s from './agentUi.module.css';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -19,6 +19,21 @@ const SUGGESTIONS = [
   'What is our total profit this week?',
 ];
 
+function UserAvatar() {
+  return (
+    <span className={`${s.avatar} ${s.avatarUser}`} aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#742279" strokeWidth="1.6" strokeLinecap="round">
+        <circle cx="12" cy="8" r="3.4" />
+        <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" />
+      </svg>
+    </span>
+  );
+}
+
+function AiAvatar() {
+  return <span className={`${s.avatar} ${s.avatarAi}`} aria-hidden="true" />;
+}
+
 export default function AgentChat() {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -30,7 +45,9 @@ export default function AgentChat() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deepThink, setDeepThink] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -99,98 +116,154 @@ export default function AgentChat() {
     }
   };
 
+  const submit = () => send(input);
+
+  // Enter sends, Shift+Enter makes a new line.
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
+  };
+
+  const autoGrow = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
   return (
-    <div className="flex flex-col h-full">
+    <div className={s.body}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-          >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                msg.role === 'assistant' ? 'bg-blue-100' : 'bg-gray-100'
-              }`}
-            >
-              {msg.role === 'assistant' ? (
-                <Bot className="w-4 h-4 text-blue-600" />
-              ) : (
-                <User className="w-4 h-4 text-gray-600" />
-              )}
-            </div>
-            <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
-                msg.role === 'user'
-                  ? 'bg-blue-600 text-white rounded-tr-sm'
-                  : msg.error
-                  ? 'bg-red-50 text-red-700 border border-red-100 rounded-tl-sm'
-                  : 'bg-gray-50 text-gray-800 border border-gray-100 rounded-tl-sm'
-              }`}
-            >
-              {msg.content}
-              <div
-                className={`text-xs mt-1 opacity-60 ${
-                  msg.role === 'user' ? 'text-right' : ''
-                }`}
-              >
-                {msg.timestamp.toLocaleTimeString()}
+      <div className={s.stream}>
+        <div className={s.inner}>
+          {messages.map((msg, i) => {
+            const isUser = msg.role === 'user';
+            return (
+              <div key={i} className={`${s.msg} ${isUser ? s.msgUser : s.msgAi}`}>
+                {!isUser && <AiAvatar />}
+                <div className={`${s.bubble} ${msg.error ? s.bubbleError : ''}`}>
+                  {msg.content}
+                  <div className={`${s.stamp} ${isUser ? s.stampUser : ''}`}>
+                    {msg.timestamp.toLocaleTimeString()}
+                  </div>
+                </div>
+                {isUser && <UserAvatar />}
+              </div>
+            );
+          })}
+
+          {loading && (
+            <div className={`${s.msg} ${s.msgAi}`}>
+              <AiAvatar />
+              <div className={s.bubble}>
+                <svg className={s.spinner} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-label="Thinking">
+                  <path d="M21 12a9 9 0 1 1-6.2-8.6" />
+                </svg>
               </div>
             </div>
-          </div>
-        ))}
-
-        {loading && (
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-blue-600" />
-            </div>
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3">
-              <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-            </div>
-          </div>
-        )}
-        <div ref={bottomRef} />
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {/* Suggestions */}
       {messages.length <= 1 && (
-        <div className="px-4 pb-2 flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s) => (
+        <div className={s.suggestions}>
+          {SUGGESTIONS.map((text) => (
             <button
-              key={s}
-              onClick={() => send(s)}
-              className="text-xs px-3 py-1.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-100"
+              key={text}
+              type="button"
+              className={s.suggestion}
+              onClick={() => send(text)}
+              disabled={loading}
             >
-              {s}
+              {text}
             </button>
           ))}
         </div>
       )}
 
-      {/* Input */}
-      <div className="border-t border-gray-100 p-4">
+      {/* Composer */}
+      {/* The entrance animation must live on the wrapper, not the composer:
+          opacity/transform on .composer would create a stacking context and
+          trap the z-index:-1 glow in front of the card instead of behind it. */}
+      <div className={`${s.composerWrap} ${s.enterComposer}`}>
         <form
+          className={s.composer}
           onSubmit={(e) => {
             e.preventDefault();
-            send(input);
+            submit();
           }}
-          className="flex gap-2"
         >
-          <input
+          <div className={s.glow} aria-hidden="true" />
+
+          <textarea
+            ref={inputRef}
+            className={s.input}
+            rows={1}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask the retail AI agent..."
-            className="flex-1 rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            onChange={(e) => {
+              setInput(e.target.value);
+              autoGrow(e.target);
+            }}
+            onKeyDown={onKeyDown}
+            placeholder="Ask the retail AI agent…"
             disabled={loading}
           />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            className="bg-blue-600 text-white rounded-xl px-4 py-2.5 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+
+          <div className={s.controls}>
+            <button
+              type="button"
+              className={`${s.chip} ${s.chipRound}`}
+              aria-label="Add attachment"
+              title="Attachments are not wired up yet"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              className={`${s.chip} ${s.chipPill} ${deepThink ? s.chipOn : ''}`}
+              aria-pressed={deepThink}
+              onClick={() => setDeepThink((v) => !v)}
+              title="Visual toggle only — does not change the request yet"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M9 18h6M10 21h4" />
+                <path d="M12 3a6 6 0 0 0-3.7 10.7c.5.4.7 1 .7 1.6V16h6v-.7c0-.6.2-1.2.7-1.6A6 6 0 0 0 12 3Z" />
+              </svg>
+              <span>DeepThink</span>
+            </button>
+
+            <span className={s.spacer} />
+
+            <button
+              type="button"
+              className={s.mic}
+              aria-label="Voice input"
+              title="Voice input is not wired up yet"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="9" y="2" width="6" height="12" rx="3" />
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v4" />
+              </svg>
+            </button>
+
+            <button
+              type="submit"
+              className={s.send}
+              aria-label="Send"
+              disabled={loading || !input.trim()}
+            >
+              <span className={s.sendInner}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#742279" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+              </span>
+            </button>
+          </div>
         </form>
       </div>
     </div>

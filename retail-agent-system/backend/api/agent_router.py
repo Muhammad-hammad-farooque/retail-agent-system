@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from agents import Runner, InputGuardrailTripwireTriggered, OutputGuardrailTripwireTriggered
 from datetime import datetime, timezone
+import logging
 import openai
 
 from ..database import get_db
@@ -12,6 +13,8 @@ from ..agents.triage_agent import triage_agent
 from ..guardrails.input_guardrails import check_input
 from ..guardrails.output_guardrails import check_output
 from ..models.chat_message import ChatMessage
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
@@ -106,26 +109,44 @@ async def run_agent_task(
             success=False,
         )
     except openai.RateLimitError as e:
+        logger.warning("AI rate limit on all providers: %s", e)
         return AgentTaskResponse(
-            response=f"Rate limit hit. Wait 1 minute and try again. Detail: {str(e)[:120]}",
+            response="The AI assistant is busy right now. Please wait a minute and try again.",
             agent_used="triage_agent",
             success=False,
         )
     except openai.AuthenticationError:
+        logger.error("AI gateway rejected AI_API_KEY")
         return AgentTaskResponse(
-            response="Invalid API key. Please check your OPENCODE_API_KEY in .env.",
+            response="The AI service is not configured correctly. Please ask an administrator to check AI_API_KEY in .env.",
+            agent_used="triage_agent",
+            success=False,
+        )
+    except openai.APITimeoutError:
+        return AgentTaskResponse(
+            response="The AI assistant took too long to respond. Please try again.",
             agent_used="triage_agent",
             success=False,
         )
     except openai.APIConnectionError:
+        logger.error("Cannot reach AI gateway")
         return AgentTaskResponse(
-            response="Cannot reach the AI service. Please check your internet connection and try again.",
+            response="The AI assistant is unavailable right now. Other features still work; please try again shortly.",
             agent_used="triage_agent",
             success=False,
         )
-    except Exception as e:
+    except openai.InternalServerError as e:
+        # The gateway returns 5xx when every configured provider has failed
+        logger.error("AI gateway 5xx (all providers failing?): %s", e)
         return AgentTaskResponse(
-            response=f"Agent error: {str(e)}",
+            response="The AI assistant is temporarily unavailable. Please try again in a few minutes.",
+            agent_used="triage_agent",
+            success=False,
+        )
+    except Exception:
+        logger.exception("Unexpected agent error")
+        return AgentTaskResponse(
+            response="Something went wrong while processing your request. Please try again.",
             agent_used="triage_agent",
             success=False,
         )

@@ -19,7 +19,7 @@ interface Props {
 export default function ProductTable({ products, loading }: Props) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+      <div className="flex items-center justify-center h-40 text-ash-500 text-sm">
         Loading products...
       </div>
     );
@@ -27,7 +27,7 @@ export default function ProductTable({ products, loading }: Props) {
 
   if (products.length === 0) {
     return (
-      <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+      <div className="flex items-center justify-center h-40 text-ash-500 text-sm">
         No products found.
       </div>
     );
@@ -37,7 +37,7 @@ export default function ProductTable({ products, loading }: Props) {
     <div className="overflow-x-auto">
       <table className="min-w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-100 text-left text-xs uppercase text-gray-500 font-semibold">
+          <tr className="border-b border-ash-100 text-left text-xs uppercase text-ash-600 font-semibold">
             <th className="pb-3 pr-4">Name</th>
             <th className="pb-3 pr-4">SKU</th>
             <th className="pb-3 pr-4">Category</th>
@@ -46,29 +46,29 @@ export default function ProductTable({ products, loading }: Props) {
             <th className="pb-3 text-right">Reorder Level</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-ash-100">
           {products.map((p) => (
-            <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-              <td className="py-3 pr-4 font-medium text-gray-900">{p.name}</td>
-              <td className="py-3 pr-4 text-gray-500 font-mono text-xs">{p.sku}</td>
+            <tr key={p.id} className="hover:bg-ash-50 transition-colors">
+              <td className="py-3 pr-4 font-medium text-ash-900">{p.name}</td>
+              <td className="py-3 pr-4 text-ash-600 font-mono text-xs">{p.sku}</td>
               <td className="py-3 pr-4">
-                <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-700">
+                <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-brand-50 text-brand-700">
                   {p.category}
                 </span>
               </td>
-              <td className="py-3 pr-4 text-right text-gray-700">
+              <td className="py-3 pr-4 text-right text-ash-700">
                 {p.price.toLocaleString()}
               </td>
               <td className="py-3 pr-4 text-right">
                 <span
                   className={`font-semibold ${
-                    p.quantity <= p.reorder_level ? 'text-red-600' : 'text-green-600'
+                    p.quantity <= p.reorder_level ? 'text-red-700' : 'text-emerald-700'
                   }`}
                 >
                   {p.quantity}
                 </span>
               </td>
-              <td className="py-3 text-right text-gray-500">{p.reorder_level}</td>
+              <td className="py-3 text-right text-ash-600">{p.reorder_level}</td>
             </tr>
           ))}
         </tbody>

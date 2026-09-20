@@ -8,3 +8,6 @@ fix_*.py
 frontend/.next/
 frontend/node_modules/
 frontend/out/
+
+# OmniRoute gateway secrets (generated locally, never commit)
+.env.omniroute

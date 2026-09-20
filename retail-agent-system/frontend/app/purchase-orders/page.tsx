@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getPurchaseOrders, updatePOStatus } from '@/lib/api';
 import { ClipboardList, RefreshCw, CheckCircle, XCircle, Clock, Send, PackageCheck, Search } from 'lucide-react';
 
@@ -27,19 +27,19 @@ const STATUS_DISPLAY: Record<string, string> = {
 };
 
 const statusStyle: Record<string, string> = {
-  pending:        'bg-yellow-50 text-yellow-700',
-  approved:       'bg-blue-50 text-blue-700',
+  pending:        'bg-amber-50 text-amber-700',
+  approved:       'bg-brand-50 text-brand-700',
   rejected:       'bg-red-50 text-red-700',
-  sent_to_vendor: 'bg-purple-50 text-purple-700',
-  received:       'bg-green-50 text-green-700',
+  sent_to_vendor: 'bg-brand-50 text-brand-700',
+  received:       'bg-emerald-50 text-emerald-700',
 };
 
 const statusIcon: Record<string, React.ReactNode> = {
-  pending:        <Clock className="w-3.5 h-3.5 text-yellow-500" />,
-  approved:       <CheckCircle className="w-3.5 h-3.5 text-blue-500" />,
-  rejected:       <XCircle className="w-3.5 h-3.5 text-red-500" />,
-  sent_to_vendor: <Send className="w-3.5 h-3.5 text-purple-500" />,
-  received:       <PackageCheck className="w-3.5 h-3.5 text-green-500" />,
+  pending:        <Clock className="w-3.5 h-3.5 text-amber-700" />,
+  approved:       <CheckCircle className="w-3.5 h-3.5 text-brand-500" />,
+  rejected:       <XCircle className="w-3.5 h-3.5 text-red-700" />,
+  sent_to_vendor: <Send className="w-3.5 h-3.5 text-brand-500" />,
+  received:       <PackageCheck className="w-3.5 h-3.5 text-emerald-700" />,
 };
 
 export default function PurchaseOrdersPage() {
@@ -49,14 +49,34 @@ export default function PurchaseOrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [updating, setUpdating] = useState<number | null>(null);
 
+  // Debounced copy of searchQuery - searching runs on the server, so we wait
+  // for a pause in typing instead of firing a request per keystroke.
+  const [searchTerm, setSearchTerm] = useState('');
+  // Guards against a slow earlier response overwriting a newer one.
+  const requestId = useRef(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchTerm(searchQuery.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const load = () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
-    getPurchaseOrders(statusFilter ? { status: statusFilter } : {})
-      .then((res) => setOrders(res.data))
-      .finally(() => setLoading(false));
+    getPurchaseOrders({
+      limit: 200,
+      ...(statusFilter && { status: statusFilter }),
+      ...(searchTerm && { search: searchTerm }),
+    })
+      .then((res) => {
+        if (currentRequest === requestId.current) setOrders(res.data);
+      })
+      .finally(() => {
+        if (currentRequest === requestId.current) setLoading(false);
+      });
   };
 
-  useEffect(() => { load(); }, [statusFilter]);
+  useEffect(() => { load(); }, [statusFilter, searchTerm]);
 
   // Auto-refresh every 30 seconds to pick up agent-driven status changes
   useEffect(() => {
@@ -86,12 +106,12 @@ export default function PurchaseOrdersPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
-          <p className="text-sm text-gray-500 mt-1">Approve orders to automatically email the vendor</p>
+          <h1 className="text-2xl font-bold text-ash-900">Purchase Orders</h1>
+          <p className="text-sm text-ash-600 mt-1">Approve orders to automatically email the vendor</p>
         </div>
         <button
           onClick={load}
-          className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 transition-colors"
+          className="flex items-center gap-2 text-sm text-ash-600 hover:text-ash-800 transition-colors"
         >
           <RefreshCw className="w-4 h-4" />
           Refresh
@@ -100,13 +120,13 @@ export default function PurchaseOrdersPage() {
 
       {/* Search */}
       <div className="relative max-w-sm mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ash-500" />
         <input
           type="text"
-          placeholder="Search by PO number..."
+          placeholder="Search by PO number or supplier..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pl-9 pr-4 py-2 text-sm border border-ash-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500"
         />
       </div>
 
@@ -118,8 +138,8 @@ export default function PurchaseOrdersPage() {
             onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
               statusFilter === s
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-300'
+                ? 'bg-brand-600 text-white'
+                : 'bg-white text-ash-600 border border-ash-200 hover:border-brand-300'
             }`}
           >
             {s ? (STATUS_DISPLAY[s] || s) : 'All'}
@@ -127,11 +147,11 @@ export default function PurchaseOrdersPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-6">
+      <div className="bg-white rounded-xl border border-ash-100 p-6">
         {loading ? (
-          <div className="flex items-center justify-center h-40 text-gray-400 text-sm">Loading orders...</div>
+          <div className="flex items-center justify-center h-40 text-ash-500 text-sm">Loading orders...</div>
         ) : orders.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-gray-400">
+          <div className="flex flex-col items-center justify-center h-40 text-ash-500">
             <ClipboardList className="w-8 h-8 mb-2 opacity-40" />
             <span className="text-sm">No purchase orders found.</span>
           </div>
@@ -139,7 +159,7 @@ export default function PurchaseOrdersPage() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 text-left text-xs uppercase text-gray-500 font-semibold">
+                <tr className="border-b border-ash-100 text-left text-xs uppercase text-ash-600 font-semibold">
                   <th className="pb-3 pr-4">Order #</th>
                   <th className="pb-3 pr-4">Product ID</th>
                   <th className="pb-3 pr-4 text-right">Qty</th>
@@ -150,22 +170,22 @@ export default function PurchaseOrdersPage() {
                   <th className="pb-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
-                {orders.filter(o => o.order_number.toLowerCase().includes(searchQuery.toLowerCase())).map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-3 pr-4 font-mono text-xs text-gray-600">{o.order_number}</td>
-                    <td className="py-3 pr-4 text-gray-500">#{o.product_id}</td>
-                    <td className="py-3 pr-4 text-right font-medium text-gray-800">{o.quantity}</td>
-                    <td className="py-3 pr-4 text-right font-semibold text-gray-900">
+              <tbody className="divide-y divide-ash-100">
+                {orders.map((o) => (
+                  <tr key={o.id} className="hover:bg-ash-50 transition-colors">
+                    <td className="py-3 pr-4 font-mono text-xs text-ash-600">{o.order_number}</td>
+                    <td className="py-3 pr-4 text-ash-600">#{o.product_id}</td>
+                    <td className="py-3 pr-4 text-right font-medium text-ash-800">{o.quantity}</td>
+                    <td className="py-3 pr-4 text-right font-semibold text-ash-900">
                       {(o.total_cost || 0).toLocaleString()}
                     </td>
-                    <td className="py-3 pr-4 text-gray-500 max-w-[120px] truncate">{o.supplier || '—'}</td>
-                    <td className="py-3 pr-4 text-xs text-gray-400">
+                    <td className="py-3 pr-4 text-ash-600 max-w-[120px] truncate">{o.supplier || '—'}</td>
+                    <td className="py-3 pr-4 text-xs text-ash-500">
                       {new Date(o.created_at).toLocaleDateString('en-GB')}
                     </td>
                     <td className="py-3 pr-4">
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
-                        statusStyle[o.status] || 'bg-gray-50 text-gray-600'
+                        statusStyle[o.status] || 'bg-ash-50 text-ash-600'
                       }`}>
                         {statusIcon[o.status]}
                         {STATUS_DISPLAY[o.status] || o.status}
@@ -177,7 +197,7 @@ export default function PurchaseOrdersPage() {
                           <button
                             disabled={updating === o.id}
                             onClick={() => handleAction(o.id, 'approved')}
-                            className="px-2.5 py-1 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                            className="px-2.5 py-1 text-xs bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                           >
                             Approve
                           </button>
@@ -194,7 +214,7 @@ export default function PurchaseOrdersPage() {
                         <button
                           disabled={updating === o.id}
                           onClick={() => handleAction(o.id, 'received')}
-                          className="px-2.5 py-1 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                          className="px-2.5 py-1 text-xs bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
                         >
                           Mark Received
                         </button>

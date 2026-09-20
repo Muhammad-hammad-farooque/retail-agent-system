@@ -7,6 +7,7 @@ from ..database import get_db
 from ..models.supplier import Supplier
 from ..models.user import User
 from ..auth.jwt_handler import get_current_user
+from ..search_utils import normalize_search_text, text_search_filter
 
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
@@ -31,10 +32,18 @@ class SupplierUpdate(BaseModel):
 def get_all_suppliers(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    search: Optional[str] = Query(None, description="Match against name, email or contact person"),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    return db.query(Supplier).order_by(Supplier.name).offset(skip).limit(limit).all()
+    query = db.query(Supplier)
+    if search:
+        term = normalize_search_text(search)
+        if term:
+            query = query.filter(
+                text_search_filter([Supplier.name, Supplier.email, Supplier.contact_person], term)
+            )
+    return query.order_by(Supplier.name).offset(skip).limit(limit).all()
 
 
 @router.get("/{supplier_id}")

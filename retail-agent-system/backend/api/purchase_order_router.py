@@ -10,6 +10,7 @@ from ..models.notification import Notification, NotificationType
 from ..models.user import User
 from ..auth.jwt_handler import get_current_user
 from ..tools.email_tools import send_vendor_email
+from ..search_utils import normalize_search_text, text_search_filter
 
 router = APIRouter(prefix="/purchase-orders", tags=["purchase-orders"])
 
@@ -19,12 +20,19 @@ def get_all_purchase_orders(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     status: Optional[str] = None,
+    search: Optional[str] = Query(None, description="Match against order number or supplier"),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
     query = db.query(PurchaseOrder)
     if status:
         query = query.filter(PurchaseOrder.status == status)
+    if search:
+        term = normalize_search_text(search)
+        if term:
+            query = query.filter(
+                text_search_filter([PurchaseOrder.order_number, PurchaseOrder.supplier], term)
+            )
     return query.order_by(PurchaseOrder.created_at.desc()).offset(skip).limit(limit).all()
 
 

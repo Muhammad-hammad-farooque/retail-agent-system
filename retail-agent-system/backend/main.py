@@ -1,6 +1,6 @@
 import os
 import json
-import asyncio
+import secrets
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,18 +24,23 @@ from .api.chat_router import router as chat_router
 
 load_dotenv()
 
-AI_MODEL = "gpt-4o-mini"
+# All AI traffic goes through the OmniRoute gateway, which handles provider
+# failover and rate limits. AI_MODEL should name an OmniRoute combo made of
+# models with reliable tool calling (the agents depend on it).
+AI_BASE_URL = os.getenv("AI_BASE_URL", "http://localhost:20128/v1")
+AI_API_KEY = os.getenv("AI_API_KEY", "")
+AI_MODEL = os.getenv("AI_MODEL", "auto")
+
+# Parameters the Agents SDK may send that most non-OpenAI providers reject.
+_UNSUPPORTED_PARAMS = ("verbosity", "reasoning_effort")
 
 
-class _RotatingKeyTransport(httpx.AsyncBaseTransport):
-    """Intercepts chat/completions requests, forces the model name, and
-    automatically rotates to the next API key on 429 rate limit errors."""
+class _ModelOverrideTransport(httpx.AsyncBaseTransport):
+    """Rewrites chat/completions requests to use AI_MODEL and strips
+    parameters unsupported by the gateway's upstream providers."""
 
-    def __init__(self, model: str, api_keys: list[str]):
+    def __init__(self, model: str):
         self._model = model
-        self._keys = [k for k in api_keys if k]
-        self._current_index = 0
-        self._lock = asyncio.Lock()
         self._inner = httpx.AsyncHTTPTransport()
 
     async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
@@ -44,53 +49,30 @@ class _RotatingKeyTransport(httpx.AsyncBaseTransport):
 
         body = json.loads(request.content)
         body["model"] = self._model
-        body.pop("verbosity", None)
-        body.pop("reasoning_effort", None)
+        for param in _UNSUPPORTED_PARAMS:
+            body.pop(param, None)
+        # Handoff tools have no arguments and are sent as
+        # {"properties": {}, "required": []}. The empty properties object gets
+        # dropped on the way upstream, and Groq then rejects the schema for having
+        # "required" without "properties". An empty "required" means nothing, so drop it.
+        for tool in body.get("tools") or []:
+            params = (tool.get("function") or {}).get("parameters") or {}
+            if params.get("required") == []:
+                params.pop("required")
         new_content = json.dumps(body).encode()
         headers = dict(request.headers)
         headers["content-length"] = str(len(new_content))
 
-        response = None
-        for attempt in range(len(self._keys)):
-            key_index = (self._current_index + attempt) % len(self._keys)
-            headers["authorization"] = f"Bearer {self._keys[key_index]}"
-            req = httpx.Request(
-                method=request.method,
-                url=request.url,
-                headers=headers,
-                content=new_content,
-            )
-            response = await self._inner.handle_async_request(req)
-            if response.status_code != 429:
-                if attempt > 0:
-                    async with self._lock:
-                        self._current_index = key_index
-                    print(f"[Key Rotation] Switched to key #{key_index + 1} after rate limit.")
-                return response
-
-        # All keys exhausted — advance index for next request and return last response
-        async with self._lock:
-            self._current_index = (self._current_index + 1) % len(self._keys)
-        print("[Key Rotation] All keys rate limited. Will retry on next request.")
-        return response
+        req = httpx.Request(
+            method=request.method,
+            url=request.url,
+            headers=headers,
+            content=new_content,
+        )
+        return await self._inner.handle_async_request(req)
 
     async def aclose(self):
         await self._inner.aclose()
-
-
-def _load_api_keys() -> list[str]:
-    """Read GITHUB_TOKEN_1, GITHUB_TOKEN_2, ... from env.
-    Falls back to GITHUB_TOKEN if numbered keys are not set."""
-    keys = []
-    for i in range(1, 11):
-        key = os.getenv(f"GITHUB_TOKEN_{i}")
-        if key:
-            keys.append(key)
-    if not keys:
-        single = os.getenv("GITHUB_TOKEN")
-        if single:
-            keys.append(single)
-    return keys
 
 
 app = FastAPI(
@@ -115,10 +97,14 @@ def _seed_admin():
     db = SessionLocal()
     try:
         if not db.query(User).filter(User.username == "admin").first():
+            password = os.getenv("ADMIN_PASSWORD")
+            if not password:
+                password = secrets.token_urlsafe(12)
+                print(f"[Startup] ADMIN_PASSWORD not set. Generated admin password: {password}")
             db.add(User(
                 username="admin",
                 email="admin@retailsystem.com",
-                hashed_password=hash_password("admin123"),
+                hashed_password=hash_password(password),
                 role=UserRole.admin,
                 is_active=True,
             ))
@@ -132,13 +118,16 @@ def _seed_admin():
 def startup():
     create_tables()
     _seed_admin()
-    api_keys = _load_api_keys()
-    print(f"[Startup] Loaded {len(api_keys)} API key(s) for rotation.")
+    if not AI_API_KEY:
+        print("[Startup] WARNING: AI_API_KEY is not set. Agent requests will fail "
+              "until you add an OmniRoute endpoint key to .env.")
+    print(f"[Startup] AI gateway: {AI_BASE_URL} (model: {AI_MODEL})")
     client = AsyncOpenAI(
-        base_url=os.getenv("GITHUB_BASE_URL", "https://models.inference.ai.azure.com"),
-        api_key=api_keys[0] if api_keys else "no-key",
+        base_url=AI_BASE_URL,
+        api_key=AI_API_KEY or "missing-key",
         http_client=httpx.AsyncClient(
-            transport=_RotatingKeyTransport(AI_MODEL, api_keys)
+            transport=_ModelOverrideTransport(AI_MODEL),
+            timeout=httpx.Timeout(120.0, connect=10.0),
         ),
     )
     set_default_openai_client(client)

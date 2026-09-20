@@ -118,19 +118,19 @@ export default function AlertBanner() {
     <div className="mb-6 space-y-3">
       {/* Header row */}
       <div className="flex items-center justify-between px-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-red-500">
+        <span className="text-xs font-semibold uppercase tracking-wide text-red-700">
           Stock Alerts
         </span>
         <button
           onClick={clearAll}
-          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-xs text-ash-500 hover:text-ash-600 transition-colors"
         >
           Clear All
         </button>
       </div>
 
       {!connected && (
-        <div className="text-xs text-gray-400 px-1">WebSocket reconnecting…</div>
+        <div className="text-xs text-ash-500 px-1">WebSocket reconnecting…</div>
       )}
 
       {alerts.map((alert) => (
@@ -141,19 +141,19 @@ export default function AlertBanner() {
           {/* Card header */}
           <div className="flex items-start gap-3 px-4 pt-4 pb-3">
             <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0 mt-0.5">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
+              <AlertTriangle className="w-4 h-4 text-red-700" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-red-800">Low Stock Alert</p>
-              <p className="text-xs text-red-500 mt-0.5">
+              <p className="text-xs text-red-700 mt-0.5">
                 {alert.count} {alert.count === 1 ? 'item' : 'items'} below reorder level
               </p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
-              <span className="text-xs text-red-400">{formatTimestamp(alert.timestamp)}</span>
+              <span className="text-xs text-red-700">{formatTimestamp(alert.timestamp)}</span>
               <button
                 onClick={() => dismiss(alert.fingerprint)}
-                className="text-red-300 hover:text-red-500 transition-colors"
+                className="text-red-700 hover:text-red-700 transition-colors"
                 aria-label="Dismiss"
               >
                 <X className="w-4 h-4" />
@@ -170,11 +170,11 @@ export default function AlertBanner() {
                   className="flex items-center justify-between gap-2 text-xs"
                 >
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <PackageX className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                    <PackageX className="w-3.5 h-3.5 text-red-700 shrink-0" />
                     <span className="text-red-800 font-medium truncate">{item.name}</span>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-red-400">
+                    <span className="text-red-700">
                       Reorder: {item.reorder_level}
                     </span>
                     <span
