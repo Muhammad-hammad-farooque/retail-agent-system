@@ -1,5 +1,4 @@
 import os
-import json
 import secrets
 import httpx
 from fastapi import FastAPI
@@ -8,6 +7,7 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from agents import set_default_openai_client, set_tracing_disabled, set_default_openai_api
 
+from .ai_failover import FailoverTransport, load_providers
 from .database import create_tables
 from .auth.auth_router import router as auth_router
 from .api.inventory_router import router as inventory_router
@@ -24,55 +24,10 @@ from .api.chat_router import router as chat_router
 
 load_dotenv()
 
-# All AI traffic goes through the OmniRoute gateway, which handles provider
-# failover and rate limits. AI_MODEL should name an OmniRoute combo made of
-# models with reliable tool calling (the agents depend on it).
-AI_BASE_URL = os.getenv("AI_BASE_URL", "http://localhost:20128/v1")
-AI_API_KEY = os.getenv("AI_API_KEY", "")
-AI_MODEL = os.getenv("AI_MODEL", "auto")
-
-# Parameters the Agents SDK may send that most non-OpenAI providers reject.
-_UNSUPPORTED_PARAMS = ("verbosity", "reasoning_effort")
-
-
-class _ModelOverrideTransport(httpx.AsyncBaseTransport):
-    """Rewrites chat/completions requests to use AI_MODEL and strips
-    parameters unsupported by the gateway's upstream providers."""
-
-    def __init__(self, model: str):
-        self._model = model
-        self._inner = httpx.AsyncHTTPTransport()
-
-    async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
-        if "chat/completions" not in str(request.url):
-            return await self._inner.handle_async_request(request)
-
-        body = json.loads(request.content)
-        body["model"] = self._model
-        for param in _UNSUPPORTED_PARAMS:
-            body.pop(param, None)
-        # Handoff tools have no arguments and are sent as
-        # {"properties": {}, "required": []}. The empty properties object gets
-        # dropped on the way upstream, and Groq then rejects the schema for having
-        # "required" without "properties". An empty "required" means nothing, so drop it.
-        for tool in body.get("tools") or []:
-            params = (tool.get("function") or {}).get("parameters") or {}
-            if params.get("required") == []:
-                params.pop("required")
-        new_content = json.dumps(body).encode()
-        headers = dict(request.headers)
-        headers["content-length"] = str(len(new_content))
-
-        req = httpx.Request(
-            method=request.method,
-            url=request.url,
-            headers=headers,
-            content=new_content,
-        )
-        return await self._inner.handle_async_request(req)
-
-    async def aclose(self):
-        await self._inner.aclose()
+# AI providers in priority order (see ai_failover.py). With AI_PROVIDER_n_*
+# unset, AI_BASE_URL / AI_API_KEY / AI_MODEL is the single provider, e.g. an
+# OmniRoute gateway. Every model listed must handle tool calls reliably.
+AI_PROVIDERS = load_providers(os.environ)
 
 
 app = FastAPI(
@@ -118,15 +73,17 @@ def _seed_admin():
 def startup():
     create_tables()
     _seed_admin()
-    if not AI_API_KEY:
-        print("[Startup] WARNING: AI_API_KEY is not set. Agent requests will fail "
-              "until you add an OmniRoute endpoint key to .env.")
-    print(f"[Startup] AI gateway: {AI_BASE_URL} (model: {AI_MODEL})")
+    for n, p in enumerate(AI_PROVIDERS, 1):
+        print(f"[Startup] AI provider {n}: {p.name} ({p.base_url}, model: {p.model})")
+    if AI_PROVIDERS[0].api_key == "missing-key":
+        print("[Startup] WARNING: no AI key set. Agent requests will fail until you set "
+              "AI_PROVIDER_1_KEY (or AI_API_KEY for a single gateway) in .env.")
     client = AsyncOpenAI(
-        base_url=AI_BASE_URL,
-        api_key=AI_API_KEY or "missing-key",
+        base_url=AI_PROVIDERS[0].base_url,
+        # The transport sets each provider's own key; this one is never sent
+        api_key=AI_PROVIDERS[0].api_key,
         http_client=httpx.AsyncClient(
-            transport=_ModelOverrideTransport(AI_MODEL),
+            transport=FailoverTransport(AI_PROVIDERS),
             timeout=httpx.Timeout(120.0, connect=10.0),
         ),
     )
