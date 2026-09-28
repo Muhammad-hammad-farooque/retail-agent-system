@@ -1,4 +1,5 @@
 from agents import Agent
+from ..guardrails.input_guardrails import ALL_INPUT_GUARDRAILS
 from ..tools.customer_tools import (
     get_customer_info,
     get_order_history,
@@ -22,8 +23,10 @@ Responsibilities:
 
 How to use RAG (search_faq):
 - ALWAYS call search_faq first for any policy-related question (returns, delivery, warranty, payments, etc.)
+- Write the search_faq query as a short, correctly spelled English phrase, even if the customer wrote in Urdu or Roman Urdu (e.g. "wapsi ki policy kya hai?" -> "return policy")
 - Use the retrieved FAQ chunks as the basis of your answer
 - Do not guess or make up policies — only answer from retrieved context
+- State only what the FAQ text says. Do not add examples, exceptions, alternatives or details that are not in it (e.g. if it says "perishables", do not list which products count as perishable)
 - If search_faq returns no relevant result, say: "I don't have specific information on that. Please visit the store or call 0800-RETAIL."
 
 Rules:
@@ -42,4 +45,6 @@ Always respond warmly and resolve issues efficiently.""",
         search_customer_by_name,
         handle_complaint,
     ],
+    # Runs when this agent is called directly by the query router
+    input_guardrails=ALL_INPUT_GUARDRAILS,
 )

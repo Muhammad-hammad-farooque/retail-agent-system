@@ -1,4 +1,5 @@
 from agents import Agent
+from ..guardrails.input_guardrails import ALL_INPUT_GUARDRAILS
 from ..tools.accounting_tools import (
     get_invoice,
     get_financial_summary,
@@ -45,4 +46,6 @@ Provide clear financial summaries with totals, percentages, and actionable insig
         approve_purchase_order,
         reject_purchase_order,
     ],
+    # Runs when this agent is called directly by the query router
+    input_guardrails=ALL_INPUT_GUARDRAILS,
 )

@@ -3,3 +3,4 @@ from .accounting_agent import accounting_agent
 from .customer_service_agent import customer_service_agent
 from .marketing_agent import marketing_agent
 from .triage_agent import triage_agent
+from .manager_agent import manager_agent

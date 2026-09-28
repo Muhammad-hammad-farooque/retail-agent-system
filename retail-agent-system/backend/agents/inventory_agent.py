@@ -1,4 +1,5 @@
 from agents import Agent
+from ..guardrails.input_guardrails import ALL_INPUT_GUARDRAILS
 from ..tools.inventory_tools import (
     check_stock,
     update_stock,
@@ -56,4 +57,6 @@ Respond in a clear, professional tone. Format numbers with commas (e.g., Rs.1,50
         notify_supplier_short_delivery,
         list_products_by_category,
     ],
+    # Runs when this agent is called directly by the query router
+    input_guardrails=ALL_INPUT_GUARDRAILS,
 )

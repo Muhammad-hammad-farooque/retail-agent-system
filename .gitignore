@@ -56,9 +56,6 @@ id_ed25519.pub
 warehouse.db
 backup/
 
-# ── ChromaDB (vector store — large, auto-generated) ───────────────────────────
-chroma_db/
-
 # ── Next.js / Node.js ─────────────────────────────────────────────────────────
 node_modules/
 .next/

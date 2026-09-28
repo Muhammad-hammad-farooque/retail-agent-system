@@ -1,4 +1,5 @@
 from agents import Agent
+from ..guardrails.input_guardrails import ALL_INPUT_GUARDRAILS
 from ..tools.marketing_tools import (
     get_sales_trends,
     get_top_products,
@@ -51,4 +52,6 @@ Always back your recommendations with data from sales trends and performance met
         send_promotional_email,
         send_promotional_sms,
     ],
+    # Runs when this agent is called directly by the query router
+    input_guardrails=ALL_INPUT_GUARDRAILS,
 )
