@@ -1,4 +1,5 @@
 from agents import Agent
+from ..guardrails.input_guardrails import ALL_INPUT_GUARDRAILS
 from ..tools.customer_tools import (
     get_customer_info,
     get_order_history,
@@ -42,4 +43,6 @@ Always respond warmly and resolve issues efficiently.""",
         search_customer_by_name,
         handle_complaint,
     ],
+    # Runs when this agent is called directly by the query router
+    input_guardrails=ALL_INPUT_GUARDRAILS,
 )

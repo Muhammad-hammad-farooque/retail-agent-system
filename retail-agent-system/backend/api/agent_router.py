@@ -9,7 +9,15 @@ from ..database import get_db
 from ..schemas.agent import AgentTaskRequest, AgentTaskResponse
 from ..auth.jwt_handler import get_current_user
 from ..models.user import User
-from ..agents.triage_agent import triage_agent
+from ..agents import (
+    inventory_agent,
+    accounting_agent,
+    customer_service_agent,
+    marketing_agent,
+    manager_agent,
+    triage_agent,
+)
+from ..agents.query_router import route_query
 from ..guardrails.input_guardrails import check_input
 from ..guardrails.output_guardrails import check_output
 from ..models.chat_message import ChatMessage
@@ -17,6 +25,31 @@ from ..models.chat_message import ChatMessage
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["agent"])
+
+AGENTS = {
+    "inventory": inventory_agent,
+    "accounting": accounting_agent,
+    "customer_service": customer_service_agent,
+    "marketing": marketing_agent,
+    "manager": manager_agent,
+    "triage": triage_agent,
+}
+AGENT_KEYS = {id(agent): key for key, agent in AGENTS.items()}
+
+# user_id -> key of the agent that answered last, so a reply like "yes" goes
+# back to it. In memory only: after a restart a reply goes to the triage LLM,
+# which works it out from the chat history as before.
+_last_agent: dict[int, str] = {}
+
+
+def _pick_agent(query: str, user_id: int):
+    decision = route_query(query, last_agent=_last_agent.get(user_id))
+    logger.info("route %s %s (%s)", decision.mode, decision.agents, decision.reason)
+    if decision.mode in ("direct", "continue"):
+        return AGENTS[decision.agents[0]]
+    if decision.mode == "multi":
+        return manager_agent
+    return triage_agent
 
 
 @router.post("/task", response_model=AgentTaskResponse)
@@ -54,11 +87,15 @@ async def run_agent_task(
         messages = [{"role": msg.role.value, "content": msg.content} for msg in history]
         messages.append({"role": "user", "content": f"{payload.query}\n\n(Today's date: {today})"})
 
-        result = await Runner.run(triage_agent, input=messages)
+        start_agent = _pick_agent(payload.query, current_user.id)
+        result = await Runner.run(start_agent, input=messages)
 
         agent_used = "triage_agent"
         if result.last_agent:
             agent_used = result.last_agent.name.lower().replace(" ", "_")
+            key = AGENT_KEYS.get(id(result.last_agent))
+            if key:
+                _last_agent[current_user.id] = key
 
         # Post-flight output check — mask PII and check flags
         output_check = check_output(result.final_output)
@@ -116,9 +153,9 @@ async def run_agent_task(
             success=False,
         )
     except openai.AuthenticationError:
-        logger.error("AI gateway rejected AI_API_KEY")
+        logger.error("AI provider rejected its API key (AI_PROVIDER_n_KEY or AI_API_KEY)")
         return AgentTaskResponse(
-            response="The AI service is not configured correctly. Please ask an administrator to check AI_API_KEY in .env.",
+            response="The AI service is not configured correctly. Please ask an administrator to check the AI provider keys in .env.",
             agent_used="triage_agent",
             success=False,
         )
