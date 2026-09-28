@@ -91,7 +91,8 @@ retail-agent-system/
 ├── docker-compose.yml        # Local dev: postgres + backend + frontend
 ├── .dockerignore
 ├── .env
-└── requirements.txt
+├── pyproject.toml            # Python dependencies (managed with uv)
+└── uv.lock                   # Exact locked versions
 ```
 
 ---
@@ -367,7 +368,8 @@ TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
 ## Setup and Running
 
 ### Prerequisites
-- Python 3.11+
+- Python 3.11
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
 - Node.js 18+
 - PostgreSQL
 
@@ -376,15 +378,21 @@ TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
 ```bash
 cd retail-agent-system
 
-# Install dependencies
-pip install -r requirements.txt
+# Install dependencies into .venv (exact versions from uv.lock, plus dev tools)
+uv sync
 
 # Create the database
 createdb retail_db
 
 # Start the backend
-uvicorn backend.main:app --reload
+uv run uvicorn backend.main:app --reload
+
+# Run the tests
+uv run pytest
 ```
+
+Add or remove a dependency with `uv add <package>` / `uv remove <package>`;
+both update `pyproject.toml` and `uv.lock`. Commit both files.
 
 Backend runs at `http://localhost:8000`. Swagger docs at `http://localhost:8000/docs`.
 
