@@ -1,4 +1,9 @@
-"""Ingest FAQ documents into ChromaDB. Run once after setting OPENAI_API_KEY."""
+"""Embed the FAQ documents and test a few searches.
+
+Optional: the backend embeds FAQs automatically on the first search. Useful to
+warm up the store (pgvector when the database has it, otherwise in memory) or to
+check retrieval after editing faq_documents.py. Needs no API key.
+"""
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -11,9 +16,10 @@ from backend.rag.faq_documents import FAQ_DOCUMENTS
 
 
 def main():
-    print(f"Ingesting {len(FAQ_DOCUMENTS)} FAQ documents into ChromaDB...")
+    print(f"Embedding {len(FAQ_DOCUMENTS)} FAQ documents...")
     count = rag_pipeline.ingest_faq(force=True)
-    print(f"Ingested {count} documents.")
+    print(f"Store: {rag_pipeline.store_name}; embedded {count} documents now "
+          "(pgvector only re-embeds new or changed FAQs).")
 
     # Test a sample search
     print("\nTesting search: 'return policy'")
@@ -30,7 +36,4 @@ def main():
 
 
 if __name__ == "__main__":
-    if not os.getenv("OPENAI_API_KEY"):
-        print("ERROR: Set OPENAI_API_KEY in .env before running this script.")
-        sys.exit(1)
     main()
