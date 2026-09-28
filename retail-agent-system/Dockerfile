@@ -20,7 +20,7 @@ RUN uv sync --frozen --no-dev
 ENV PATH="/app/.venv/bin:$PATH"
 
 # Bake the FAQ embedding model into the image, so containers never download it
-# at runtime (Railway's disk is reset on every deploy). Keep the model name in
+# at runtime (Render's disk is reset on every deploy). Keep the model name in
 # sync with EMBEDDING_MODEL in backend/rag/pipeline.py.
 ENV FASTEMBED_CACHE_PATH=/app/.fastembed_cache
 RUN python -c "from fastembed import TextEmbedding; TextEmbedding('BAAI/bge-small-en-v1.5', cache_dir='/app/.fastembed_cache')"
