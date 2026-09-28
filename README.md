@@ -6,7 +6,7 @@ A retail store automation platform run by a team of AI agents. Store staff chat 
 - **Backend:** FastAPI + PostgreSQL, agents built on the OpenAI Agents SDK (`openai-agents`)
 - **AI models:** free-tier, OpenAI-compatible providers (Groq, Gemini, OpenRouter) with automatic failover inside the backend
 - **Frontend:** Next.js + Tailwind CSS ("Aubergine & Ash" design)
-- **Hosting:** Railway (backend) + Neon (PostgreSQL + pgvector) + Vercel (frontend)
+- **Hosting:** Render (backend) + Neon (PostgreSQL + pgvector) + Vercel (frontend)
 
 ---
 
@@ -24,7 +24,7 @@ A retail store automation platform run by a team of AI agents. Store staff chat 
 | Email | Brevo HTTPS API (vendor emails carry a PO PDF generated with fpdf2) |
 | SMS | Twilio |
 | Python packaging | [uv](https://docs.astral.sh/uv/) (`pyproject.toml` + `uv.lock`) |
-| Deployment | Railway (backend, Docker) + Neon (PostgreSQL) + Vercel (frontend) |
+| Deployment | Render (backend, Docker) + Neon (PostgreSQL) + Vercel (frontend) |
 | Local containers | Docker Compose (PostgreSQL, optional OmniRoute gateway, backend, frontend) |
 
 ---
@@ -37,7 +37,7 @@ A retail store automation platform run by a team of AI agents. Store staff chat 
                  └────────────┬─────────────┘
                               │ REST + WebSocket (/ws/alerts)
                  ┌────────────▼─────────────┐
-                 │  FastAPI backend         │  Railway (Docker)
+                 │  FastAPI backend         │  Render (Docker)
                  │                          │
                  │  REST routers ───────────┼──────────────▶ PostgreSQL + pgvector (Neon)
                  │  /agent/task             │                 store data, chat history,
@@ -196,7 +196,7 @@ search_faq("return policy") ──▶ embed query ──▶ cosine similarity �
 
 - **Free and local:** embeddings run on the CPU. No API key, no rate limit.
 - **Persistent on Neon:** each row stores a hash of its text + model name, so a redeploy re-embeds nothing and only edited FAQs are re-embedded. The backend runs `CREATE EXTENSION IF NOT EXISTS vector` itself.
-- **Model baked into the Docker image** (`FASTEMBED_CACHE_PATH`), because Railway's disk resets on every deploy.
+- **Model baked into the Docker image** (`FASTEMBED_CACHE_PATH`), because Render's disk resets on every deploy.
 - **Model choice:** measured on 19 questions worded differently from the FAQs. bge-small found the right FAQ in the top 3 for 18/19 (multilingual MiniLM: 16/19).
 - **Roman Urdu:** retrieval on raw Roman Urdu is weak for both models, so the agent writes its FAQ queries in English ("wapsi ki policy kya hai?" → "return policy") and still answers in the customer's language.
 - **No invented policies:** the agent must state only what the FAQ text says. If the search fails, `search_faq` says so plainly, instead of the agent answering "I don't have information on that".
@@ -504,7 +504,7 @@ NEXT_PUBLIC_WS_URL=ws://localhost:8000
 
 **Getting free AI keys:** [Groq console](https://console.groq.com/keys), [Google AI Studio](https://aistudio.google.com/apikey), [OpenRouter](https://openrouter.ai/keys) (models ending in `:free` cost nothing but have low limits). Free models change over time; any model you add must handle **tool calls** reliably.
 
-**Email (Brevo):** sign up at [brevo.com](https://brevo.com) → Settings → Senders & IPs (verify your sender) → SMTP & API → API Keys. If Brevo restricts API keys to authorised IPs, add the server's IP (for Railway, the backend's outbound IP), not only your home IP.
+**Email (Brevo):** sign up at [brevo.com](https://brevo.com) → Settings → Senders & IPs (verify your sender) → SMTP & API → API Keys. If Brevo restricts API keys to authorised IPs, add the server's outbound IPs (Render dashboard → your service → **Connect** → **Outbound**), not only your home IP.
 
 ---
 
@@ -566,21 +566,35 @@ docker-compose up --build
 | Service | Purpose |
 |---------|---------|
 | [Neon](https://neon.tech) | PostgreSQL + pgvector |
-| [Railway](https://railway.com) | FastAPI backend (Docker) |
+| [Render](https://render.com) | FastAPI backend (Docker) |
 | [Vercel](https://vercel.com) | Next.js frontend |
 
 **1. Neon:** create a project and copy the connection string (`postgresql://...neon.tech/neondb?sslmode=require`). pgvector is available on Neon; the backend enables it on the first FAQ search.
 
-**2. Railway:** new service from the GitHub repo → root directory `retail-agent-system`. Railway builds the `Dockerfile`, which:
+**2. Render:** New → **Web Service** → connect the GitHub repo → **Root Directory** `retail-agent-system` → **Language** Docker. Render builds the `Dockerfile`, which:
 - installs exactly the versions in `uv.lock` (`uv sync --frozen --no-dev`)
 - downloads the embedding model into the image, so nothing is downloaded at runtime
 
-Set the variables from `.env`, with Neon's URL as `DATABASE_URL`, the `AI_PROVIDER_n_*` values, and `ADMIN_PASSWORD`. The app listens on port **8000**, so make sure Railway's public networking port is 8000.
+Environment variables:
+
+| Variable | Value |
+|---|---|
+| `PORT` | `8000`: the Dockerfile starts the app on 8000, and Render routes to `PORT` (default 10000) |
+| `DATABASE_URL` | Neon connection string |
+| `JWT_SECRET` | Long random string. **Required:** without it the code falls back to `"changeme"` |
+| `AI_PROVIDER_n_NAME` / `_URL` / `_KEY` / `_MODEL` | Same as `.env` (each provider needs URL, KEY and MODEL) |
+| `BREVO_API_KEY`, `SMTP_EMAIL` | Email |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | Only for SMS campaigns |
+| `ADMIN_PASSWORD` | Only used if no admin user exists yet |
+
+Don't set `FASTEMBED_CACHE_PATH` (the Dockerfile sets it; overriding it makes the backend download the model again). Set **Health Check Path** to `/health`.
+
+**Free instance notes:** 512 MB RAM (the embedding model adds roughly 150–250 MB, so watch the Metrics tab), and the service sleeps after 15 minutes idle, so the first request afterwards is slow.
 
 **3. Vercel:** new project → root directory `retail-agent-system/frontend` → set:
 ```env
-NEXT_PUBLIC_API_URL=https://<your-backend>.up.railway.app
-NEXT_PUBLIC_WS_URL=wss://<your-backend>.up.railway.app
+NEXT_PUBLIC_API_URL=https://<your-backend>.onrender.com
+NEXT_PUBLIC_WS_URL=wss://<your-backend>.onrender.com
 ```
 
 ---
@@ -632,7 +646,7 @@ uv run python -m evaluation.run_eval
 
 - **Route in code, fall back to the LLM:** a wrong route costs more than an extra LLM call, so the rule-based router only acts when it's confident; everything else goes to the triage LLM. Short replies ("yes", "approve") go back to the agent that asked, which is remembered per user in memory. After a restart, a reply goes to triage, which reads the chat history.
 - **Specialists as tools for multi-part requests:** a handoff passes control to one agent and never returns, so "check stock and create a discount" used to lose its second half. The Manager agent calls specialists as tools, gets their answers back and combines them.
-- **Failover inside the backend:** no extra gateway service to host or secure on Railway, and provider keys live only in environment variables. Only errors another provider could fix trigger failover.
+- **Failover inside the backend:** no extra gateway service to host or secure on Render, and provider keys live only in environment variables. Only errors another provider could fix trigger failover.
 - **Exact error codes only:** Groq's and Gemini's ordinary per-minute 429 messages mention "billing" as an upgrade hint, so out-of-credit detection matches only `insufficient_quota` (and 402). Otherwise normal rate limits would pause a provider for 10 minutes.
 - **Local embeddings over an embeddings API:** the FAQ is small and fixed, so a 67 MB CPU model avoids API keys, cost and rate limits. The old OpenAI-embedding setup silently broke when the key was removed.
 - **pgvector with an in-memory fallback:** production keeps vectors in Neon (one database, persistent across deploys). Local Windows PostgreSQL has no pgvector, so the same search runs in memory there and in tests.
