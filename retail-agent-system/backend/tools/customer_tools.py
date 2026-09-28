@@ -1,3 +1,4 @@
+import logging
 import time
 from typing import Optional
 from agents import function_tool
@@ -7,6 +8,8 @@ from ..models.invoice import Invoice, InvoiceStatus
 from ..models.complaint import Complaint
 from ..models.notification import Notification, NotificationType
 from ..rag.pipeline import rag_pipeline
+
+logger = logging.getLogger(__name__)
 
 
 def _db():
@@ -107,7 +110,14 @@ def search_customer_by_name(name: str) -> str:
 @function_tool
 def search_faq(query: str) -> str:
     """Search the store FAQ knowledge base for answers to customer questions. Uses semantic search."""
-    chunks = rag_pipeline.search(query, top_k=3)
+    try:
+        chunks = rag_pipeline.search(query, top_k=3)
+    except Exception:
+        # Say so plainly: the agent would otherwise read this as "no such policy"
+        logger.exception("FAQ search failed")
+        return ("FAQ SEARCH UNAVAILABLE: the knowledge base could not be searched because of a "
+                "technical error. Tell the customer you cannot look up store policies right now, "
+                "and do not guess the policy.")
     if not chunks:
         return "No relevant FAQ information found. Please contact customer support directly."
     lines = [f"FAQ Results for: '{query}'"]

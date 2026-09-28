@@ -14,5 +14,5 @@ frontend/.next
 .pytest_cache
 htmlcov
 .coverage
-chroma_db
 *.mp4
+.fastembed_cache
