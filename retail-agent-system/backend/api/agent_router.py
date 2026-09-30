@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from agents import Runner, InputGuardrailTripwireTriggered, OutputGuardrailTripwireTriggered
+from agents.items import ToolCallItem
 from datetime import datetime, timezone
 import logging
+import re
 import openai
 
 from ..database import get_db
@@ -40,10 +42,45 @@ AGENT_KEYS = {id(agent): key for key, agent in AGENTS.items()}
 # back to it. In memory only: after a restart a reply goes to the triage LLM,
 # which works it out from the chat history as before.
 _last_agent: dict[int, str] = {}
+# Whether that agent's last reply ended with a question (e.g. "What's the customer's name?")
+_awaiting_reply: dict[int, bool] = {}
+
+
+# handle_complaint's reference format: COMP-<customer id>-<YYYYmmddHHMMSS>
+REAL_COMPLAINT_REF = re.compile(r"\bCOMP-\d+-\d{14}\b")
+COMPLAINT_CLAIM = re.compile(
+    r"complaint[^.]{0,60}\b(registered|logged|recorded|filed|submitted)\b"
+    r"|\b(registered|logged|recorded|filed|submitted)\b[^.]{0,60}complaint",
+    re.IGNORECASE,
+)
+UNSAVED_COMPLAINT_NOTICE = (
+    "\n\n⚠️ This complaint was NOT saved. Please give the customer's name, phone number "
+    "or customer ID so it can be registered."
+)
+
+
+def _claims_unsaved_complaint(result) -> bool:
+    """True when the reply says a complaint was registered but none was saved.
+
+    Models sometimes invent a confirmation and reference number instead of
+    calling handle_complaint. A real save either shows up as that tool call or,
+    when the manager agent ran the specialist as a tool, as its COMP- reference.
+    """
+    text = str(result.final_output)
+    if not COMPLAINT_CLAIM.search(text) or REAL_COMPLAINT_REF.search(text):
+        return False
+    return not any(
+        isinstance(item, ToolCallItem) and getattr(item.raw_item, "name", None) == "handle_complaint"
+        for item in result.new_items
+    )
 
 
 def _pick_agent(query: str, user_id: int):
-    decision = route_query(query, last_agent=_last_agent.get(user_id))
+    decision = route_query(
+        query,
+        last_agent=_last_agent.get(user_id),
+        awaiting_reply=_awaiting_reply.get(user_id, False),
+    )
     logger.info("route %s %s (%s)", decision.mode, decision.agents, decision.reason)
     if decision.mode in ("direct", "continue"):
         return AGENTS[decision.agents[0]]
@@ -91,11 +128,16 @@ async def run_agent_task(
         result = await Runner.run(start_agent, input=messages)
 
         agent_used = "triage_agent"
+        key = None
         if result.last_agent:
             agent_used = result.last_agent.name.lower().replace(" ", "_")
             key = AGENT_KEYS.get(id(result.last_agent))
             if key:
                 _last_agent[current_user.id] = key
+        # Only a known agent's question counts: a triage question would otherwise
+        # send the answer to whichever specialist ran before it
+        asked = str(result.final_output).rstrip().endswith("?")
+        _awaiting_reply[current_user.id] = asked and key is not None
 
         # Post-flight output check — mask PII and check flags
         output_check = check_output(result.final_output)
@@ -108,6 +150,10 @@ async def run_agent_task(
             )
 
         final_response = output_check["response"]
+
+        if _claims_unsaved_complaint(result):
+            logger.warning("reply claimed a complaint was registered without saving one")
+            final_response += UNSAVED_COMPLAINT_NOTICE
 
         # Append manager approval notice if required
         if output_check["requires_approval"]:

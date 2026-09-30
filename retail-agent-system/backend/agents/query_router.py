@@ -116,7 +116,9 @@ CONTINUATION_WORDS = set(
 MAX_CONTINUATION_WORDS = 5
 
 
-def route_query(query: str, last_agent: Optional[str] = None) -> RouteDecision:
+def route_query(query: str, last_agent: Optional[str] = None, awaiting_reply: bool = False) -> RouteDecision:
+    """awaiting_reply: the previous agent ended with a question, so a prompt with
+    no keywords of its own (a name, phone number or ID) is taken as the answer."""
     text = normalize_search_text(query).lower()
     words = re.findall(r"[a-z0-9']+", text)
 
@@ -153,6 +155,8 @@ def route_query(query: str, last_agent: Optional[str] = None) -> RouteDecision:
     agents = tuple(sorted(hits, key=hits.get))
     reason = ", ".join(matched) or "no keywords"
     if not agents:
+        if awaiting_reply and last_agent in CONTINUABLE:
+            return RouteDecision("continue", (last_agent,), f"answer to {last_agent} question")
         return RouteDecision("llm", (), reason)
     if len(agents) == 1:
         return RouteDecision("direct", agents, reason)

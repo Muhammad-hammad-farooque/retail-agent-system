@@ -153,6 +153,29 @@ class TestCustomerTools:
             assert "RECEIVED" in result
 
 
+    @pytest.mark.parametrize("query", ["Test Cust", "0300-1234567", "+92 300 1234567", "923001234567"])
+    def test_find_customer_by_name_or_phone(self, sample_customer, query):
+        from tests.conftest import TestingSessionLocal
+        with patch("backend.tools.customer_tools.SessionLocal", TestingSessionLocal):
+            from backend.tools.customer_tools import find_customer
+            result = call_tool(find_customer, query)
+            assert f"ID {sample_customer.id}: Test Customer" in result
+            assert "****4567" in result
+            assert "03001234567" not in result
+
+    def test_find_customer_by_id(self, sample_customer):
+        from tests.conftest import TestingSessionLocal
+        with patch("backend.tools.customer_tools.SessionLocal", TestingSessionLocal):
+            from backend.tools.customer_tools import find_customer
+            assert "Test Customer" in call_tool(find_customer, f"#{sample_customer.id}")
+
+    def test_find_customer_no_match(self, sample_customer):
+        from tests.conftest import TestingSessionLocal
+        with patch("backend.tools.customer_tools.SessionLocal", TestingSessionLocal):
+            from backend.tools.customer_tools import find_customer
+            assert "No customers found" in call_tool(find_customer, "0311-9999999")
+
+
 class TestMarketingTools:
 
     def test_update_price_below_cost_blocked(self, sample_product):
