@@ -10,13 +10,16 @@ from agents import (
 
 BUDGET_THRESHOLD = 100_000  # Rs.100,000
 
-# Matches: Rs.150,000 | Rs.1,50,000 | PKR 150000 — prefix is REQUIRED to avoid
-# matching timestamps (e.g. PO-95-20260517123456) as monetary amounts.
-AMOUNT_PATTERN = re.compile(
-    r"(?:Rs\.?|PKR)\s*([\d,]+(?:\.\d+)?)",
+# Manager approval applies to purchase orders only — never to sales. So the
+# check needs purchase-order context, and it reads only the amount labelled
+# "Total Cost" (a PO's cost), not a sale's "Total Amount"/"Net Amount".
+# The Rs./PKR prefix is REQUIRED to avoid matching timestamps
+# (e.g. PO-95-20260517123456) as monetary amounts.
+PO_CONTEXT_PATTERN = re.compile(r"purchase order|\bPO-\d", re.IGNORECASE)
+PO_COST_PATTERN = re.compile(
+    r"total cost\W{0,10}(?:is\s+)?(?:Rs\.?|PKR)\s*([\d,]+(?:\.\d+)?)",
     re.IGNORECASE,
 )
-ORDER_KEYWORDS = {"total cost", "order", "purchase order", "net amount", "total amount"}
 
 
 def _parse_amount(text: str) -> float:
@@ -28,10 +31,9 @@ def _parse_amount(text: str) -> float:
 
 
 def _check_budget_limit(response: str) -> tuple[bool, str]:
-    lower = response.lower()
-    if not any(kw in lower for kw in ORDER_KEYWORDS):
+    if not PO_CONTEXT_PATTERN.search(response):
         return False, ""
-    for match in AMOUNT_PATTERN.finditer(response):
+    for match in PO_COST_PATTERN.finditer(response):
         amount = _parse_amount(match.group(1))
         if amount > BUDGET_THRESHOLD:
             return True, f"Amount Rs.{amount:,.0f} exceeds Rs.{BUDGET_THRESHOLD:,.0f} — manager approval required."
