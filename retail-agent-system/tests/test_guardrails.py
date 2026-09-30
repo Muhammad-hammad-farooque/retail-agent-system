@@ -83,12 +83,25 @@ class TestOutputGuardrails:
         assert result["requires_approval"] is False
 
     def test_exactly_100k_not_flagged(self):
-        result = check_output("Total Cost Rs.100,000 for this order")
+        result = check_output("Purchase Order PO-7-20260930: Total Cost Rs.100,000")
         assert result["requires_approval"] is False
 
     def test_above_100k_flagged(self):
-        result = check_output("Total Cost Rs.100,001 for this order")
+        result = check_output("Purchase Order PO-7-20260930: Total Cost Rs.100,001")
         assert result["requires_approval"] is True
+
+    def test_large_sale_not_flagged(self):
+        # Manager approval applies to purchase orders only, never to sales.
+        result = check_output(
+            "Sale Processed Successfully:\nInvoice       : INV-20260930-4\n"
+            "Total Amount  : Rs.500,000\nNet Amount    : Rs.585,000\nStatus        : PAID\n"
+            "WARNING: Stock is now low (2 units). Consider creating a purchase order."
+        )
+        assert result["requires_approval"] is False
+
+    def test_profit_loss_report_not_flagged(self):
+        result = check_output("Profit & Loss — Last 30 days:\nTotal Revenue: Rs.900,000\nTotal Cost: Rs.600,000")
+        assert result["requires_approval"] is False
 
     # ── Negative Quantity Check ──────────────────────────────────────────────
 

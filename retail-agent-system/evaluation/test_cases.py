@@ -51,6 +51,7 @@ OUTPUT_GUARDRAIL_CASES = [
     ("Stock quantity: -10 units remaining", False, True, False),
     ("Customer phone: 03001234567 address: House 5 Lahore", False, False, True),
     ("Revenue for this month is Rs.250,000", False, False, False),
+    ("Sale Processed: Total Amount Rs.500,000 Net Amount Rs.585,000 PAID", False, False, False),
 ]
 
 RAG_QUALITY_CASES = [
