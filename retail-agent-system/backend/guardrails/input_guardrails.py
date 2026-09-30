@@ -14,7 +14,7 @@ RETAIL_KEYWORDS = {
     "customer", "order", "sale", "revenue", "profit", "loss", "price",
     "discount", "promotion", "supplier", "warehouse", "reorder", "quantity",
     "category", "marketing", "complaint", "refund", "return", "exchange",
-    "loyalty", "delivery", "shipping", "tax", "gst", "purchase", "financial",
+    "loyalty", "delivery", "shipping", "tax", "sst", "gst", "purchase", "financial",
     "accounting", "report", "trend", "budget", "expense", "receipt",
     # Urdu transliterations
     "maal", "saaman", "bechna", "kharidna", "hisaab", "raseed", "customer",

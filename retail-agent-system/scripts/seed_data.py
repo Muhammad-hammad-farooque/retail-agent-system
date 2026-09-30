@@ -12,6 +12,7 @@ from backend.models.product import Product
 from backend.models.customer import Customer
 from backend.models.invoice import Invoice, InvoiceItem, InvoiceStatus
 from backend.models.sale import Sale
+from backend.tax import PAYMENT_METHODS, sst_rate
 
 CATEGORIES = ["Electronics", "Clothing", "Groceries", "Home & Kitchen", "Sports", "Beauty", "Books"]
 
@@ -265,7 +266,8 @@ def seed_database():
                     sale_records.append(sale)
 
                 discount = random.choice([0, 0, 0, total * 0.05, total * 0.10])
-                tax = total * 0.17  # 17% GST
+                payment_method = random.choice(PAYMENT_METHODS)
+                tax = total * sst_rate(payment_method)  # SST depends on the payment method
                 net = total - discount + tax
 
                 inv = Invoice(
@@ -276,7 +278,7 @@ def seed_database():
                     tax=tax,
                     net_amount=net,
                     status=InvoiceStatus.paid,
-                    payment_method=random.choice(["Cash", "Card", "EasyPaisa", "JazzCash", "Bank Transfer"]),
+                    payment_method=payment_method,
                     created_at=current,
                 )
                 db.add(inv)

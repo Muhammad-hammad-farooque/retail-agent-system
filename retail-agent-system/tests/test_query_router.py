@@ -302,3 +302,13 @@ def test_unrecognised_second_request_goes_to_triage(query):
 ])
 def test_single_request_with_joining_words_stays_direct(query, agent):
     _check(query, "direct", (agent,))
+
+
+@pytest.mark.parametrize("query", ["cash", "card", "payment by card", "paid via jazzcash", "easypaisa se"])
+def test_payment_method_answer_goes_back_to_inventory(query):
+    # Inventory asked "How did the customer pay?" before selling
+    _check(query, "continue", (INV,), last_agent=INV)
+
+
+def test_sst_question_goes_to_accounting():
+    _check("how much SST did we collect this month", "direct", (ACC,))

@@ -11,10 +11,23 @@ from ..models.purchase_order import PurchaseOrder, PurchaseOrderStatus
 from ..models.supplier import Supplier
 from ..models.notification import Notification, NotificationType
 from ..tools.email_tools import send_vendor_email
+from ..tax import format_rate
 
 
 def _db():
     return SessionLocal()
+
+
+def _stored_tax_label(inv: Invoice) -> str:
+    """Label from the tax stored on the invoice, e.g. 'Tax (7% — Card)'.
+
+    The rate is worked out from that invoice's own amounts rather than today's
+    SST settings, so invoices made before a rate change show what they were charged.
+    """
+    method = inv.payment_method or "N/A"
+    if not inv.total_amount:
+        return f"Tax ({method})"
+    return f"Tax ({format_rate(inv.tax / inv.total_amount)} — {method})"
 
 
 @function_tool
@@ -33,7 +46,7 @@ def get_invoice(invoice_id: int) -> str:
             f"Date: {inv.created_at.strftime('%Y-%m-%d')}",
             f"Total Amount: Rs.{inv.total_amount:,.0f}",
             f"Discount: Rs.{inv.discount:,.0f}",
-            f"Tax (GST): Rs.{inv.tax:,.0f}",
+            f"{_stored_tax_label(inv)}: Rs.{inv.tax:,.0f}",
             f"Net Amount: Rs.{inv.net_amount:,.0f}",
             f"\nItems ({len(inv.items)}):",
         ]
