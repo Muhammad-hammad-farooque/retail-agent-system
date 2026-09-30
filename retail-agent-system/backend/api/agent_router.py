@@ -59,6 +59,12 @@ UNSAVED_COMPLAINT_NOTICE = (
 )
 
 
+TRIAGE_NO_HANDOFF_REPLY = (
+    "Sorry, I couldn't work out which department should handle that, so nothing was done. "
+    "Please rephrase it, e.g. \"create purchase order for 5 units of <product>\"."
+)
+
+
 def _claims_unsaved_complaint(result) -> bool:
     """True when the reply says a complaint was registered but none was saved.
 
@@ -138,6 +144,17 @@ async def run_agent_task(
         # send the answer to whichever specialist ran before it
         asked = str(result.final_output).rstrip().endswith("?")
         _awaiting_reply[current_user.id] = asked and key is not None
+
+        # Triage must always hand off (tool_choice="required"). If a provider ignored
+        # that and triage answered itself, its text can't be trusted: it has no tools,
+        # yet it has claimed "I've logged your complaint" / "forwarded your order".
+        if key == "triage":
+            logger.warning("triage answered without handing off: %r", str(result.final_output)[:200])
+            return AgentTaskResponse(
+                response=TRIAGE_NO_HANDOFF_REPLY,
+                agent_used=agent_used,
+                success=False,
+            )
 
         # Post-flight output check — mask PII and check flags
         output_check = check_output(result.final_output)

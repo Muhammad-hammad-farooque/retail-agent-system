@@ -103,6 +103,9 @@ def test_marketing(query):
     ("customer bought 2 kettles and one arrived broken", CS),
     ("the iron I bought last week is not working", CS),
     ("jo blender kharida tha woh kharab nikla", CS),
+    # Typos inside a rule phrase
+    ("create purcahse order of 5 units of Black & Decker ET122 2-Slice Toaster", INV),
+    ("create purchse order for 10 kettles", INV),
 ])
 def test_conflicts(query, agent):
     _check(query, "direct", (agent,))

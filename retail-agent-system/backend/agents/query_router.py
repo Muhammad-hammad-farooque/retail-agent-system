@@ -107,6 +107,23 @@ FUZZY_MIN_LEN = 5
 FUZZY_CUTOFF = 0.85
 FUZZY_VOCAB = [w for w in KEYWORDS if len(w) >= FUZZY_MIN_LEN]
 
+# Words the RULES above are built from. A typo of one ("purcahse order") is
+# corrected before the rules run, so a misspelled phrase still matches.
+RULE_WORDS = ("purchase orders order complain complaint delivery deliver received receive "
+              "report reports trends history customer customers promotion pricing strategy "
+              "profit expenses damaged broken defective faulty working").split()
+
+
+def _fix_rule_typos(text: str) -> str:
+    def fix(m: re.Match) -> str:
+        word = m.group(0)
+        if len(word) < FUZZY_MIN_LEN or word in RULE_WORDS or word in KEYWORDS:
+            return word
+        close = get_close_matches(word, RULE_WORDS, n=1, cutoff=FUZZY_CUTOFF)
+        return close[0] if close else word
+    return re.sub(r"[a-z]+", fix, text)
+
+
 # A reply made only of these words is an answer to the previous agent's question
 CONTINUATION_WORDS = set(
     "yes yeah yep yup y no nope ok okay sure please thanks thank you approve approved accept "
@@ -119,7 +136,7 @@ MAX_CONTINUATION_WORDS = 5
 def route_query(query: str, last_agent: Optional[str] = None, awaiting_reply: bool = False) -> RouteDecision:
     """awaiting_reply: the previous agent ended with a question, so a prompt with
     no keywords of its own (a name, phone number or ID) is taken as the answer."""
-    text = normalize_search_text(query).lower()
+    text = _fix_rule_typos(normalize_search_text(query).lower())
     words = re.findall(r"[a-z0-9']+", text)
 
     if words and len(words) <= MAX_CONTINUATION_WORDS and all(w in CONTINUATION_WORDS for w in words):

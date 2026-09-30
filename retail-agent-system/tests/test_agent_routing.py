@@ -28,8 +28,10 @@ SPECIALISTS = [inventory_agent, accounting_agent, customer_service_agent, market
 @pytest.fixture(autouse=True)
 def clear_last_agent():
     agent_router._last_agent.clear()
+    agent_router._awaiting_reply.clear()
     yield
     agent_router._last_agent.clear()
+    agent_router._awaiting_reply.clear()
 
 
 def _mock_run(answered_by=None):
@@ -56,9 +58,11 @@ def _ask(client, auth_headers, query, answered_by=None):
     ("hello", triage_agent),
 ])
 def test_starts_routed_agent(client, auth_headers, query, expected):
+    # The mock ends the run on the starting agent; for triage that means it never
+    # handed off, which is reported as a failure (see test_triage_text_reply_is_never_shown)
     started, _, body = _ask(client, auth_headers, query)
     assert started is expected
-    assert body["success"] is True
+    assert body["success"] is (expected is not triage_agent)
 
 
 def test_query_and_date_still_sent_to_agent(client, auth_headers):
@@ -130,3 +134,20 @@ def test_manager_can_reach_every_department():
         "customer_service_department",
         "marketing_department",
     }
+
+
+def test_triage_must_always_hand_off():
+    assert triage_agent.model_settings.tool_choice == "required"
+
+
+def test_triage_text_reply_is_never_shown(client, auth_headers):
+    # e.g. "I've forwarded your request to the Inventory Agent" — nothing was done
+    _, _, body = _ask(client, auth_headers, "hello")
+    assert body["response"] == agent_router.TRIAGE_NO_HANDOFF_REPLY
+    assert body["success"] is False
+
+
+def test_specialist_after_triage_handoff_is_shown(client, auth_headers):
+    _, _, body = _ask(client, auth_headers, "hello", answered_by=customer_service_agent)
+    assert body["response"] == "Done."
+    assert body["success"] is True
