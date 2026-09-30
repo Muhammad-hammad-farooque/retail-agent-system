@@ -98,6 +98,11 @@ def test_marketing(query):
     # Approving/rejecting a PO is Accounting; creating one is Inventory
     ("approve PO 8", ACC),
     ("create PO for 20 kettles", INV),
+    # A damaged/broken purchase is a complaint, not a sale
+    ("i purchased anex electric kettle 1.7L but when the product deliverd it was damaged", CS),
+    ("customer bought 2 kettles and one arrived broken", CS),
+    ("the iron I bought last week is not working", CS),
+    ("jo blender kharida tha woh kharab nikla", CS),
 ])
 def test_conflicts(query, agent):
     _check(query, "direct", (agent,))

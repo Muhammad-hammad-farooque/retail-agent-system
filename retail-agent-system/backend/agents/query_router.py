@@ -39,6 +39,8 @@ def _rule(pattern: str, agent: str) -> tuple[re.Pattern, str]:
 
 SALE_UNITS = r"(units?|pieces?|peices?|pcs|qty|quantity|items?|bags?|boxes?|packs?|packets?|bottles?|cartons?)"
 SALE_TO_CUSTOMER = r"(?:[^.]*?\bto\s+(?:customer|client)\s*(?:#|id)?\s*\w+)?"
+DAMAGE_WORDS = (r"\b(damaged?|broken|broke|defective|faulty|cracked|not\s+working|stopped\s+working"
+                r"|kharab|toot\w*|tut\w*)\b")
 
 
 # Order matters: earlier rules claim their words first.
@@ -50,6 +52,9 @@ RULES: list[tuple[re.Pattern, str]] = [
     _rule(r"\bsold\s+the\s+(most|least)\b|\b(by|according\s+to)\s+(sells?|sales?)\b", ACCOUNTING),
     # Before the sale rule: "complaining that the X he bought..." is not a sale
     _rule(r"\bcomplain\w*", CUSTOMER_SERVICE),
+    # "bought 2 kettles, one arrived damaged" is a complaint, not a sale:
+    # claim the whole span so the sale rules below don't see the quantity.
+    _rule(r"\b(bought|purchased|ordered|kharid\w*)\b[^.]{0,100}?" + DAMAGE_WORDS, CUSTOMER_SERVICE),
     _rule(r"\b(approv|reject)\w*\b[^.]{0,25}?\b(po|purchase\s+orders?)\b", ACCOUNTING),
     _rule(r"\bpurchase\s+expenses?\b", ACCOUNTING),
     _rule(r"\bprofit\s*(and|&)\s*loss\b|\bp\s*&\s*l\b", ACCOUNTING),
@@ -90,7 +95,7 @@ for _agent, _words in {
                 "finances tax gst expense expenses income earnings payment payments "
                 "hisaab hisab munafa nuqsan aamdani",
     CUSTOMER_SERVICE: "complaint complaints complain refund refunds warranty exchange return returns "
-                      "loyalty policy policies faq shikayat wapsi",
+                      "loyalty policy policies faq shikayat wapsi damaged defective faulty broken kharab",
     MARKETING: "discount discounts discounted campaign campaigns marketing sms",
 }.items():
     for _word in _words.split():
