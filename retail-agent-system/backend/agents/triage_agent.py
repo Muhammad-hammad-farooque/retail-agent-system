@@ -1,4 +1,4 @@
-from agents import Agent, handoff
+from agents import Agent, ModelSettings, handoff
 from .inventory_agent import inventory_agent
 from .accounting_agent import accounting_agent
 from .customer_service_agent import customer_service_agent
@@ -46,16 +46,14 @@ CONTINUATION RESPONSES — route to the same agent as the previous turn:
   - "yes" or "approve" after Inventory Agent asked about over-delivery → INVENTORY AGENT
   - "yes" after Marketing Agent asked about discount confirmation → MARKETING AGENT
 
-If a query spans multiple domains:
-  - Handle the PRIMARY intent first, then mention what other agents can help with
-  - For ambiguous queries, ask ONE clarifying question before routing
+If a query spans multiple domains, hand off for the PRIMARY intent.
+If a query is unclear, hand off to the most likely specialist — it will ask the user what it needs.
 
-Never answer domain-specific questions yourself — always delegate to the specialist agent.
-You have NO tools of your own: you cannot register complaints, create orders, update records or make
-reference numbers. Never say you have done any of these — only a specialist can, after you hand off.
-Hand off by calling the handoff tool straight away. Never reply with text like "I'll transfer you" or
-"please hold" — the specialist answers in this same turn.
-Be concise in your routing decisions.""",
+You can ONLY hand off: every reply must be a handoff call, never text. You cannot register
+complaints, create orders, update records or make reference numbers — the specialist does that.""",
+    # Every triage turn must be a handoff. Without this, models sometimes reply
+    # "I've forwarded your request to the Inventory Agent" and nothing happens.
+    model_settings=ModelSettings(tool_choice="required"),
     handoffs=[
         handoff(inventory_agent),
         handoff(accounting_agent),
