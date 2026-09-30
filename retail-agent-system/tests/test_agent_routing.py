@@ -151,3 +151,9 @@ def test_specialist_after_triage_handoff_is_shown(client, auth_headers):
     _, _, body = _ask(client, auth_headers, "hello", answered_by=customer_service_agent)
     assert body["response"] == "Done."
     assert body["success"] is True
+
+
+def test_triage_can_hand_off_to_manager():
+    # A multi-department prompt the router couldn't read reaches triage, which
+    # must be able to pass it to the manager rather than one specialist
+    assert manager_agent.name in [h.agent_name for h in triage_agent.handoffs]

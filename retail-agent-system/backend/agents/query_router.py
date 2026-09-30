@@ -133,10 +133,38 @@ CONTINUATION_WORDS = set(
 MAX_CONTINUATION_WORDS = 5
 
 
+# Words that start a second request: "refund him, ALSO how many are left", "stock AUR offer".
+# Plain "and" is left out: it mostly adds details to the same request
+# ("30% off clothing and start from 25/5"), or sits inside a phrase ("profit and loss").
+CONNECTOR = re.compile(r"\b(?:also|aur|plus|then|phir|as\s+well\s+as)\b|[?;]")
+# A joined part this long with no keywords may be a request for another department
+MIN_UNKNOWN_PART_WORDS = 3
+
+
+def _unrecognised_part(text: str, spans: list[tuple[int, int]]) -> Optional[str]:
+    """The first joined part of the prompt with no keyword match, if any.
+
+    With one department found, "kettle broke, customer wants a refund, also how
+    many kettles are left" would go straight to Customer Service and the stock
+    question would be lost. A part like that sends the prompt to triage instead,
+    which can pass it to the manager.
+    """
+    cuts = [m.end() for m in CONNECTOR.finditer(text)]
+    for i, start in enumerate(cuts):
+        end = next((m.start() for m in CONNECTOR.finditer(text, start)), len(text))
+        part = text[start:end]
+        if len(re.findall(r"[a-z]+", part)) < MIN_UNKNOWN_PART_WORDS:
+            continue
+        if not any(s < end and e > start for s, e in spans):
+            return part.strip()
+    return None
+
+
 def route_query(query: str, last_agent: Optional[str] = None, awaiting_reply: bool = False) -> RouteDecision:
     """awaiting_reply: the previous agent ended with a question, so a prompt with
     no keywords of its own (a name, phone number or ID) is taken as the answer."""
     text = _fix_rule_typos(normalize_search_text(query).lower())
+    original = text
     words = re.findall(r"[a-z0-9']+", text)
 
     if words and len(words) <= MAX_CONTINUATION_WORDS and all(w in CONTINUATION_WORDS for w in words):
@@ -147,14 +175,16 @@ def route_query(query: str, last_agent: Optional[str] = None, awaiting_reply: bo
     # agent -> position of its first match, so agents are listed in prompt order
     hits: dict[str, int] = {}
     matched: list[str] = []
+    spans: list[tuple[int, int]] = []
 
-    def record(agent: str, pos: int, label: str) -> None:
-        hits[agent] = min(pos, hits.get(agent, pos))
+    def record(agent: str, span: tuple[int, int], label: str) -> None:
+        hits[agent] = min(span[0], hits.get(agent, span[0]))
         matched.append(f"{label}->{agent}")
+        spans.append(span)
 
     for pattern, agent in RULES:
         for m in pattern.finditer(text):
-            record(agent, m.start(), m.group(0).strip())
+            record(agent, m.span(), m.group(0).strip())
         # Blank out matches (same length, so positions stay valid)
         text = pattern.sub(lambda m: " " * len(m.group(0)), text)
 
@@ -167,7 +197,7 @@ def route_query(query: str, last_agent: Optional[str] = None, awaiting_reply: bo
                 agent = KEYWORDS[close[0]]
                 word = f"{word}~{close[0]}"
         if agent:
-            record(agent, m.start(), word)
+            record(agent, m.span(), word)
 
     agents = tuple(sorted(hits, key=hits.get))
     reason = ", ".join(matched) or "no keywords"
@@ -176,5 +206,8 @@ def route_query(query: str, last_agent: Optional[str] = None, awaiting_reply: bo
             return RouteDecision("continue", (last_agent,), f"answer to {last_agent} question")
         return RouteDecision("llm", (), reason)
     if len(agents) == 1:
+        unknown = _unrecognised_part(original, spans)
+        if unknown:
+            return RouteDecision("llm", (), f"{reason}; unrecognised part: {unknown!r}")
         return RouteDecision("direct", agents, reason)
     return RouteDecision("multi", agents, reason)

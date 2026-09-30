@@ -3,6 +3,7 @@ from .inventory_agent import inventory_agent
 from .accounting_agent import accounting_agent
 from .customer_service_agent import customer_service_agent
 from .marketing_agent import marketing_agent
+from .manager_agent import manager_agent
 from ..guardrails.input_guardrails import ALL_INPUT_GUARDRAILS
 from ..guardrails.output_guardrails import ALL_OUTPUT_GUARDRAILS
 
@@ -46,7 +47,14 @@ CONTINUATION RESPONSES — route to the same agent as the previous turn:
   - "yes" or "approve" after Inventory Agent asked about over-delivery → INVENTORY AGENT
   - "yes" after Marketing Agent asked about discount confirmation → MARKETING AGENT
 
-If a query spans multiple domains, hand off for the PRIMARY intent.
+MANAGER AGENT → when ONE message asks for things from TWO OR MORE departments:
+  - "how many toasters are left, and put them on sale for Eid" → Inventory + Marketing → MANAGER AGENT
+  - "kettle broke, customer wants a refund, also how many kettles are left" → Customer Service + Inventory → MANAGER AGENT
+  - "toaster kitne hain aur unpe eid offer lagao" → Inventory + Marketing → MANAGER AGENT
+  The Manager Agent asks each department and combines the answers. A specialist can only do its
+  own part, so never send a multi-department message to one specialist.
+  Do NOT use it when every part belongs to one department ("check stock of rice and sugar" → INVENTORY AGENT).
+
 If a query is unclear, hand off to the most likely specialist — it will ask the user what it needs.
 
 You can ONLY hand off: every reply must be a handoff call, never text. You cannot register
@@ -59,6 +67,7 @@ complaints, create orders, update records or make reference numbers — the spec
         handoff(accounting_agent),
         handoff(customer_service_agent),
         handoff(marketing_agent),
+        handoff(manager_agent),
     ],
     input_guardrails=ALL_INPUT_GUARDRAILS,
     output_guardrails=ALL_OUTPUT_GUARDRAILS,

@@ -279,3 +279,26 @@ REAL_PROMPTS = [
 @pytest.mark.parametrize("query, mode, agents", REAL_PROMPTS)
 def test_real_prompts(query, mode, agents):
     _check(query, mode, agents)
+
+
+# ── A second request the rules can't place goes to triage ───────────────────
+
+@pytest.mark.parametrize("query", [
+    # Only Customer Service is recognised; the stock question would be lost
+    "kettle broke, customer wants money back, also how many kettles are left",
+    "complaint for customer 45 about the iron; what else can we offer him instead",
+])
+def test_unrecognised_second_request_goes_to_triage(query):
+    _check(query, "llm", ())
+
+
+@pytest.mark.parametrize("query, agent", [
+    # "and" inside a phrase, or adding details to the same request
+    ("what is the profit and loss for last 30 days", ACC),
+    ("check stock of rice and sugar", INV),
+    ("show low stock items and their prices", INV),
+    # The part after "then" has its own keyword
+    ("create purchase order for 5 toasters then email the supplier", INV),
+])
+def test_single_request_with_joining_words_stays_direct(query, agent):
+    _check(query, "direct", (agent,))
