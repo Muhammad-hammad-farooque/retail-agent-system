@@ -1,6 +1,8 @@
 """Tests for input and output guardrails."""
+import asyncio
+
 import pytest
-from backend.guardrails.input_guardrails import check_input
+from backend.guardrails.input_guardrails import check_input, language_guardrail_fn
 from backend.guardrails.output_guardrails import check_output, mask_sensitive_data
 
 
@@ -134,3 +136,45 @@ class TestOutputGuardrails:
         result = check_output(response)
         assert result["response"] == response
         assert result["flags"] == []
+
+
+# ── Abusive words match whole words only ────────────────────────────────────
+
+@pytest.mark.parametrize("query", [
+    "20 units of Adidas Neoprene Dumbbell Pair 5kg has been sold",
+    "sell the scrap metal shelves",
+    "is this lock foolproof?",
+    "5 units of Anex AG-1039 Sandwich Maker has been sold",
+    "check stock of ABC cable",
+])
+def test_product_words_are_not_abusive(query):
+    assert check_input(query)["allowed"] is True
+
+
+@pytest.mark.parametrize("query", ["you are dumb", "what a fool", "this is crap", "SHUT  UP", "tum ullu ho"])
+def test_abusive_words_still_blocked(query):
+    assert check_input(query)["allowed"] is False
+
+
+# ── The agent's guardrail checks only the newest message ────────────────────
+
+
+def _agent_guardrail_trips(messages):
+    return asyncio.run(language_guardrail_fn(None, None, messages)).tripwire_triggered
+
+
+def test_earlier_flagged_message_does_not_block_new_one():
+    history = [
+        {"role": "user", "content": "you are dumb"},
+        {"role": "assistant", "content": "Please maintain a respectful tone."},
+        {"role": "user", "content": "5 units of Anex AG-1039 Sandwich Maker has been sold"},
+    ]
+    assert _agent_guardrail_trips(history) is False
+
+
+def test_newest_abusive_message_is_blocked():
+    history = [
+        {"role": "user", "content": "check stock of rice"},
+        {"role": "user", "content": "you are an idiot"},
+    ]
+    assert _agent_guardrail_trips(history) is True

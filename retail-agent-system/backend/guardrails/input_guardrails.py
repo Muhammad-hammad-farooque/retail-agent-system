@@ -77,23 +77,47 @@ ABUSIVE_WORDS = {
     "asshole", "bullshit", "crap", "damn you", "screw you",
     # Urdu transliterations (common abusive)
     "gandu", "bewakoof", "harami", "kameena", "gadha", "ullu",
-    "chutiya", "madarchod", "bsdk", "bc ", " mc ",
+    "chutiya", "madarchod", "bsdk", "bc", "mc",
 }
+
+# Whole words only: a plain substring test flagged product names such as
+# "Adidas Dumbbell" (dumb), "scrap" (crap) and "foolproof" (fool)
+ABUSIVE_PATTERN = re.compile(
+    r"\b(?:" + "|".join(re.escape(w).replace(r"\ ", r"\s+") for w in sorted(ABUSIVE_WORDS)) + r")\b"
+)
 
 
 def _has_abusive_language(query: str) -> bool:
-    lower = query.lower()
-    return any(word in lower for word in ABUSIVE_WORDS)
+    return ABUSIVE_PATTERN.search(query.lower()) is not None
 
 
 # ── Guardrail Functions ───────────────────────────────────────────────────────
+
+def _latest_user_text(input: str | list[TResponseInputItem]) -> str:
+    """The newest user message the agent was given.
+
+    The endpoint sends the last 10 chat messages as context. Checking all of
+    them meant one flagged message kept blocking every later one, and those
+    older messages were already checked when they were sent.
+    """
+    if isinstance(input, str):
+        return input
+    for item in reversed(input):
+        if isinstance(item, dict) and item.get("role") == "user":
+            content = item.get("content")
+            if isinstance(content, str):
+                return content
+            # Content parts: [{"type": "input_text", "text": "..."}]
+            return " ".join(p.get("text", "") for p in content or [] if isinstance(p, dict))
+    return ""
+
 
 async def scope_guardrail_fn(
     ctx: RunContextWrapper,
     agent: Agent,
     input: str | list[TResponseInputItem],
 ) -> GuardrailFunctionOutput:
-    query = input if isinstance(input, str) else str(input)
+    query = _latest_user_text(input)
     is_retail = _is_retail_related(query)
     return GuardrailFunctionOutput(
         output_info={"check": "scope", "passed": is_retail, "query": query[:100]},
@@ -106,7 +130,7 @@ async def harmful_guardrail_fn(
     agent: Agent,
     input: str | list[TResponseInputItem],
 ) -> GuardrailFunctionOutput:
-    query = input if isinstance(input, str) else str(input)
+    query = _latest_user_text(input)
     is_harmful, reason = _is_harmful(query)
     return GuardrailFunctionOutput(
         output_info={"check": "harmful", "passed": not is_harmful, "reason": reason},
@@ -119,7 +143,7 @@ async def language_guardrail_fn(
     agent: Agent,
     input: str | list[TResponseInputItem],
 ) -> GuardrailFunctionOutput:
-    query = input if isinstance(input, str) else str(input)
+    query = _latest_user_text(input)
     is_abusive = _has_abusive_language(query)
     return GuardrailFunctionOutput(
         output_info={"check": "language", "passed": not is_abusive},
