@@ -242,6 +242,29 @@ Agent creates PO (priced at cost price)
 
 ---
 
+## Sales Tax (SST)
+
+Every sale made through `sell_product` is charged Sales Tax (SST). The rate depends on how the customer paid:
+
+| Payment method | SST | Setting |
+|---|---|---|
+| Cash | 15% | `SST_RATE_CASH=0.15` |
+| Card | 7% | `SST_RATE_DIGITAL=0.07` |
+| JazzCash, EasyPaisa, Bank Transfer | 7% (same reduced rate as card) | `SST_RATE_DIGITAL=0.07` |
+
+```
+tax        = subtotal × rate
+net amount = subtotal + tax
+```
+
+- **Configurable:** the rates are read from the environment (`backend/tax.py`) on every sale, so changing them needs no code change. Values are fractions (`0.15` = 15%); a missing setting falls back to the defaults above, and an invalid one (e.g. `15`) stops the sale with an error instead of charging the wrong tax.
+- **Invoice label:** shows the rate and method actually used, e.g. `Tax (15% SST — Cash)` or `Tax (7% SST — Card)`.
+- **Payment method:** common spellings are accepted ("credit card", "jazz cash", "easy paisa"). An unknown method (e.g. "cheque") is refused before any stock or invoice changes. If the user doesn't say how the customer paid, the Inventory Agent asks, since the tax depends on it.
+- **Stored per invoice:** each invoice keeps the tax it was charged. A rate change applies only to later sales and never recalculates existing invoices; invoice details (`get_invoice`) show the rate worked out from that invoice's own amounts.
+- **Reports use the stored tax:** the Accounting summary (`total_tax`, `net_revenue`), `get_sales_summary`, and the Sales Dashboard (revenue, recent transactions, payment breakdown) sum each invoice's stored `tax` / `net_amount`. Revenue and profit on `Sale` records are before tax.
+
+---
+
 ## Guardrails
 
 ### Input (before any LLM call)
@@ -492,6 +515,10 @@ TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_PHONE_NUMBER=+1xxxxxxxxxx
 
+# Sales Tax (SST) by payment method, as fractions (defaults shown)
+SST_RATE_CASH=0.15                 # Cash
+SST_RATE_DIGITAL=0.07              # Card, JazzCash, EasyPaisa, Bank Transfer
+
 # Optional: where FastEmbed keeps the model (set in the Dockerfile for production)
 # FASTEMBED_CACHE_PATH=/app/.fastembed_cache
 ```
@@ -586,6 +613,7 @@ Environment variables:
 | `BREVO_API_KEY`, `SMTP_EMAIL` | Email |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_PHONE_NUMBER` | Only for SMS campaigns |
 | `ADMIN_PASSWORD` | Only used if no admin user exists yet |
+| `SST_RATE_CASH`, `SST_RATE_DIGITAL` | Optional: Sales Tax rates (default `0.15` and `0.07`). See [Sales Tax (SST)](#sales-tax-sst) |
 
 Don't set `FASTEMBED_CACHE_PATH` (the Dockerfile sets it; overriding it makes the backend download the model again). Set **Health Check Path** to `/health`.
 

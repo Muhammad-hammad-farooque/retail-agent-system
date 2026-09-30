@@ -25,7 +25,7 @@ IMPORTANT: If the user says "[product] sold to [customer]" or "sell [product] to
 
 ACCOUNTING AGENT → for:
   - invoices, bills, payments, revenue, profit, loss
-  - financial summaries, tax, GST, expenses
+  - financial summaries, tax, SST, expenses
   - keywords: "invoice", "bill", "revenue", "profit", "financial", "tax", "payment", "sales report"
 
 CUSTOMER SERVICE AGENT → for:

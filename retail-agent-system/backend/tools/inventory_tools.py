@@ -4,6 +4,7 @@ from typing import Optional
 from agents import function_tool
 from ..database import SessionLocal
 from ..search_utils import MAX_SEARCH_RESULTS, normalize_search_text, product_search_filter
+from ..tax import PAYMENT_METHODS, normalize_payment_method, sst_rate, tax_label
 from ..models.product import Product
 from ..models.supplier import Supplier
 from ..models.purchase_order import PurchaseOrder, PurchaseOrderStatus
@@ -427,9 +428,19 @@ def sell_product(
     customer_id: Optional[int] = None,
 ) -> str:
     """Process a sale: deducts stock and creates a paid invoice + sale record.
-    Payment methods: Cash, Card, EasyPaisa, JazzCash, Bank Transfer."""
+    Payment methods: Cash, Card, EasyPaisa, JazzCash, Bank Transfer.
+    Sales tax (SST) depends on the payment method: cash is taxed at the cash
+    rate, card and digital payments at the lower digital rate."""
+    method = normalize_payment_method(payment_method)
+    if method is None:
+        return (
+            f"Unknown payment method '{payment_method}'. "
+            f"Use one of: {', '.join(PAYMENT_METHODS)}. No sale was made."
+        )
     db = _db()
     try:
+        # Before any change, so a bad SST_RATE_* setting stops the sale cleanly
+        rate = sst_rate(method)
         product = db.query(Product).filter(Product.id == product_id).first()
         if not product:
             return f"Product with ID {product_id} not found."
@@ -443,9 +454,9 @@ def sell_product(
         old_qty = product.quantity
         product.quantity = old_qty - quantity
 
-        # Calculate amounts (17% GST)
+        # Tax is stored on the invoice, so a later rate change never alters this sale
         total_amount = product.price * quantity
-        tax = round(total_amount * 0.17, 2)
+        tax = round(total_amount * rate, 2)
         net_amount = round(total_amount + tax, 2)
         profit = round((product.price - product.cost_price) * quantity, 2)
 
@@ -459,7 +470,7 @@ def sell_product(
             tax=tax,
             net_amount=net_amount,
             status=InvoiceStatus.paid,
-            payment_method=payment_method,
+            payment_method=method,
         )
         db.add(invoice)
         db.flush()
@@ -495,9 +506,9 @@ def sell_product(
             f"Quantity Sold : {quantity} units\n"
             f"Unit Price    : Rs.{product.price:,.0f}\n"
             f"Total Amount  : Rs.{total_amount:,.0f}\n"
-            f"Tax (17% GST) : Rs.{tax:,.0f}\n"
+            f"{tax_label(rate, method)} : Rs.{tax:,.0f}\n"
             f"Net Amount    : Rs.{net_amount:,.0f}\n"
-            f"Payment       : {payment_method}\n"
+            f"Payment       : {method}\n"
             f"Stock         : {old_qty} → {product.quantity} units\n"
             f"Status        : PAID"
             f"{low_stock_warning}"

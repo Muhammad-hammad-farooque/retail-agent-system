@@ -92,7 +92,7 @@ for _agent, _words in {
     INVENTORY: "stock stocks inventory quantity qty reorder restock warehouse sku supplier "
                "available availability bache bacha bachay",
     ACCOUNTING: "invoice invoices bill bills revenue profit profits loss losses financial finance "
-                "finances tax gst expense expenses income earnings payment payments "
+                "finances tax sst gst expense expenses income earnings payment payments "
                 "hisaab hisab munafa nuqsan aamdani",
     CUSTOMER_SERVICE: "complaint complaints complain refund refunds warranty exchange return returns "
                       "loyalty policy policies faq shikayat wapsi damaged defective faulty broken kharab",
@@ -128,7 +128,9 @@ def _fix_rule_typos(text: str) -> str:
 CONTINUATION_WORDS = set(
     "yes yeah yep yup y no nope ok okay sure please thanks thank you approve approved accept "
     "reject rejected proceed confirm confirmed cancel send it dont don't skip go ahead do "
-    "haan han ji jee nahi nahin theek thik hai notify return".split()
+    "haan han ji jee nahi nahin theek thik hai notify return "
+    # Answers to "How did the customer pay?" ("payment by card" is not an Accounting request)
+    "cash card jazzcash jazz easypaisa easy paisa bank transfer online by via paid pay payment se".split()
 )
 MAX_CONTINUATION_WORDS = 5
 
