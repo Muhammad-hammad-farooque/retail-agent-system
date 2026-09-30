@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from typing import Optional
 from agents import function_tool
@@ -91,17 +92,34 @@ def update_loyalty_points(customer_id: int, points_change: int) -> str:
         db.close()
 
 
+def _phone_digits(phone: str) -> str:
+    """Last 10 digits, so 0300-1234567, +92 300 1234567 and 923001234567 all compare equal."""
+    return re.sub(r"\D", "", phone or "")[-10:]
+
+
 @function_tool
-def search_customer_by_name(name: str) -> str:
-    """Search for customers by name (partial match)."""
+def find_customer(query: str) -> str:
+    """Find customers by ID (e.g. "45" or "#45"), phone number (any format) or name (partial match)."""
     db = _db()
     try:
-        customers = db.query(Customer).filter(Customer.name.ilike(f"%{name}%")).limit(10).all()
+        text = query.strip()
+        digits = re.sub(r"\D", "", text)
+        if re.fullmatch(r"(?:id\s*)?#?\s*\d{1,6}", text, re.IGNORECASE):
+            customers = db.query(Customer).filter(Customer.id == int(digits)).all()
+        elif len(digits) >= 7:
+            wanted = _phone_digits(digits)
+            customers = [
+                c for c in db.query(Customer).filter(Customer.phone.isnot(None)).all()
+                if _phone_digits(c.phone) == wanted
+            ]
+        else:
+            customers = db.query(Customer).filter(Customer.name.ilike(f"%{text}%")).limit(10).all()
         if not customers:
-            return f"No customers found matching '{name}'."
-        lines = [f"Customers matching '{name}':"]
-        for c in customers:
-            lines.append(f"  ID {c.id}: {c.name} | {c.email} | Points: {c.loyalty_points}")
+            return f"No customers found matching '{query}'."
+        lines = [f"Customers matching '{query}':"]
+        for c in customers[:10]:
+            phone = f"****{_phone_digits(c.phone)[-4:]}" if c.phone else "no phone"
+            lines.append(f"  ID {c.id}: {c.name} | Phone: {phone} | Points: {c.loyalty_points}")
         return "\n".join(lines)
     finally:
         db.close()

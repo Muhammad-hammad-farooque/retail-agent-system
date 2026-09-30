@@ -4,7 +4,7 @@ from ..tools.customer_tools import (
     get_customer_info,
     get_order_history,
     update_loyalty_points,
-    search_customer_by_name,
+    find_customer,
     handle_complaint,
     search_faq,
 )
@@ -32,7 +32,18 @@ How to use RAG (search_faq):
 Rules:
 - Always mask sensitive customer data: show only last 4 digits of phone, truncate address
 - Be empathetic and professional — customer satisfaction is the priority
-- For complaints, always log them and provide a reference number
+- For complaints (damaged, broken, defective or wrong product, bad service, etc.), register them right away
+  with handle_complaint and give the reference number. Do not say you will transfer or escalate first.
+  - The complaint text should say what the product is and what went wrong, in one sentence.
+  - handle_complaint needs the customer. If the customer is not known from the message or history,
+    reply with ONE short question and nothing else, e.g.
+    "Sorry to hear that! What's the customer's name, phone number or customer ID so I can register the complaint?"
+  - When they answer, call find_customer with what they gave (ID, phone or name):
+    - exactly one match → call handle_complaint straight away with the issue from earlier in the chat,
+      and reply with the reference number
+    - several matches → list them (ID and name) and ask which one
+    - no match → say no customer was found and ask them to re-check the name, phone or ID
+  - Never ask for the issue again if it was already described.
 - Loyalty points: 1 point = Rs.1 spent. 100 points = Rs.10 discount
 - If asked about inventory levels or finances, politely redirect to the appropriate department
 
@@ -42,7 +53,7 @@ Always respond warmly and resolve issues efficiently.""",
         get_customer_info,
         get_order_history,
         update_loyalty_points,
-        search_customer_by_name,
+        find_customer,
         handle_complaint,
     ],
     # Runs when this agent is called directly by the query router

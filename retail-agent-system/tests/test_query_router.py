@@ -11,8 +11,8 @@ from backend.agents.query_router import route_query
 INV, ACC, CS, MKT = "inventory", "accounting", "customer_service", "marketing"
 
 
-def _check(query, expected_mode, expected_agents, last_agent=None):
-    decision = route_query(query, last_agent=last_agent)
+def _check(query, expected_mode, expected_agents, last_agent=None, awaiting_reply=False):
+    decision = route_query(query, last_agent=last_agent, awaiting_reply=awaiting_reply)
     assert (decision.mode, decision.agents) == (expected_mode, expected_agents), (
         f"{query!r} -> {decision.mode} {decision.agents} ({decision.reason})"
     )
@@ -98,6 +98,11 @@ def test_marketing(query):
     # Approving/rejecting a PO is Accounting; creating one is Inventory
     ("approve PO 8", ACC),
     ("create PO for 20 kettles", INV),
+    # A damaged/broken purchase is a complaint, not a sale
+    ("i purchased anex electric kettle 1.7L but when the product deliverd it was damaged", CS),
+    ("customer bought 2 kettles and one arrived broken", CS),
+    ("the iron I bought last week is not working", CS),
+    ("jo blender kharida tha woh kharab nikla", CS),
 ])
 def test_conflicts(query, agent):
     _check(query, "direct", (agent,))
@@ -186,6 +191,20 @@ def test_continuation_without_previous_agent_uses_llm(query):
 
 def test_continuation_after_triage_uses_llm():
     _check("yes", "llm", (), last_agent="triage")
+
+
+@pytest.mark.parametrize("query", ["Ali Khan", "0300-1234567", "+92 300 1234567", "his name is Sara"])
+def test_answer_to_agent_question_continues(query):
+    # Customer Service asked "What's the customer's name, phone or ID?"
+    _check(query, "continue", (CS,), last_agent=CS, awaiting_reply=True)
+
+
+def test_keywordless_prompt_without_question_uses_llm():
+    _check("Ali Khan", "llm", (), last_agent=CS)
+
+
+def test_new_request_overrides_pending_question():
+    _check("show low stock items", "direct", (INV,), last_agent=CS, awaiting_reply=True)
 
 
 def test_new_request_overrides_previous_agent():
