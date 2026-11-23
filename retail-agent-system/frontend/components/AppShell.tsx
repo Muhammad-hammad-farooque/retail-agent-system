@@ -27,7 +27,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Navbar />
-      <main className="flex-1 overflow-auto">{children}</main>
+      {/* pt-14 clears the mobile top bar; min-w-0 lets wide tables scroll inside. */}
+      <main className="min-w-0 flex-1 overflow-auto pt-14 md:pt-0">{children}</main>
     </div>
   );
 }

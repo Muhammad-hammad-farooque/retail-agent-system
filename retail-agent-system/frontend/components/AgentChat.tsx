@@ -22,7 +22,7 @@ const SUGGESTIONS = [
 function UserAvatar() {
   return (
     <span className={`${s.avatar} ${s.avatarUser}`} aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#742279" strokeWidth="1.6" strokeLinecap="round">
+      <svg viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-700))" strokeWidth="1.6" strokeLinecap="round">
         <circle cx="12" cy="8" r="3.4" />
         <path d="M4.8 20a7.2 7.2 0 0 1 14.4 0" />
       </svg>
@@ -258,7 +258,7 @@ export default function AgentChat() {
               disabled={loading || !input.trim()}
             >
               <span className={s.sendInner}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="#742279" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-700))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 19V5M5 12l7-7 7 7" />
                 </svg>
               </span>

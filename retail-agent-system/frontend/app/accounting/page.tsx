@@ -123,7 +123,7 @@ export default function AccountingPage() {
           onClick={() => setTab('sales')}
           className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
             tab === 'sales'
-              ? 'bg-white text-ash-900 shadow-sm'
+              ? 'bg-surface text-ash-900 shadow-sm'
               : 'text-ash-600 hover:text-ash-700'
           }`}
         >
@@ -133,7 +133,7 @@ export default function AccountingPage() {
           onClick={() => setTab('purchases')}
           className={`px-5 py-2 rounded-md text-sm font-medium transition-colors ${
             tab === 'purchases'
-              ? 'bg-white text-ash-900 shadow-sm'
+              ? 'bg-surface text-ash-900 shadow-sm'
               : 'text-ash-600 hover:text-ash-700'
           }`}
         >
@@ -195,7 +195,7 @@ export default function AccountingPage() {
             />
           </div>
 
-          <div className="bg-white rounded-xl border border-ash-100 p-6">
+          <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
             {salesLoading ? (
               <div className="flex items-center justify-center h-40 text-ash-500 text-sm">
                 Loading invoices...
@@ -298,7 +298,7 @@ export default function AccountingPage() {
             />
           </div>
 
-          <div className="bg-white rounded-xl border border-ash-100 p-6">
+          <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
             {purchasesLoading ? (
               <div className="flex items-center justify-center h-40 text-ash-500 text-sm">
                 Loading purchases...

@@ -83,7 +83,7 @@ export default function DashboardPage() {
           </div>
 
           {kpis.top_categories && kpis.top_categories.length > 0 && (
-            <div className="bg-white rounded-xl border border-ash-200 p-6">
+            <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-brand-700" />
                 <h2 className="text-base font-semibold text-ash-800">

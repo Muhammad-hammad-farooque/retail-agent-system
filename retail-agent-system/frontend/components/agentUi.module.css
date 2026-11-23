@@ -5,23 +5,23 @@
    ============================================================ */
 
 .root {
-  --bg: #faf8fa;          /* ash-50   canvas */
-  --surface: #ffffff;
-  --line: #ded5e0;        /* ash-200  */
-  --line-soft: #ebe5ec;   /* ash-100  */
-  --ink: #460c34;         /* ash-900  */
-  --muted: #5b4f58;       /* ash-600  */
-  --placeholder: #72686f; /* ash-500  */
-  --brand: #8d4893;       /* brand-600 */
-  --brand-ink: #742279;   /* brand-700 */
-  --brand-deep: #5f0264;  /* brand-800 */
-  --brand-tint: #ebd7ef;  /* brand-100 */
-  --brand-tint-soft: #f7f0f9; /* brand-50 */
-  --brand-line: #d6b8db;  /* brand-200 */
-  --user-ink: #51084a;    /* brand-900 */
+  --bg: transparent;                 /* the shared canvas shows through */
+  --surface: rgb(var(--surface-rgb, 255 255 255) / 0.82);
+  --line: rgb(var(--ash-200));
+  --line-soft: rgb(var(--ash-100));
+  --ink: rgb(var(--ash-900));
+  --muted: rgb(var(--ash-600));
+  --placeholder: rgb(var(--ash-500));
+  --brand: rgb(var(--brand-600));
+  --brand-ink: rgb(var(--brand-700));
+  --brand-deep: rgb(var(--brand-800));
+  --brand-tint: rgb(var(--brand-100));
+  --brand-tint-soft: rgb(var(--brand-50));
+  --brand-line: rgb(var(--brand-200));
+  --user-ink: rgb(var(--brand-900));
 
   --grad: linear-gradient(90deg,
-    #c197c6 0%, #a770ad 24%, #8d4893 52%, #742279 78%, #5f0264 100%);
+    rgb(var(--brand-300)) 0%, rgb(var(--brand-400)) 30%, rgb(var(--brand-500)) 62%, rgb(var(--brand-600)) 100%);
 
   display: flex;
   flex-direction: column;
@@ -138,9 +138,9 @@
 }
 
 .bubbleError {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #b91c1c;
+  background: rgb(239 68 68 / 0.12);
+  border-color: rgb(248 113 113 / 0.4);
+  color: rgb(220 38 38);
 }
 
 .stamp { margin-top: 5px; font-size: 0.68rem; color: var(--muted); opacity: 0.75; }
@@ -195,7 +195,7 @@
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: clamp(14px, 1.32vw, 22px);
-  box-shadow: 0 1px 2px rgba(70, 12, 52, 0.05), 0 12px 32px -16px rgba(70, 12, 52, 0.28);
+  box-shadow: 0 1px 2px rgb(var(--shadow) / 0.06), 0 12px 32px -16px rgb(var(--shadow) / 0.28);
   padding: clamp(14px, 1.5vw, 22px);
   display: flex;
   flex-direction: column;
@@ -373,4 +373,13 @@
     opacity: 1;
     transform: none;
   }
+}
+
+/* glass panels so the retail canvas stays visible behind the chat */
+.header { -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.bubble { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+
+/* mobile top bar in the app shell is 56px tall */
+@media (max-width: 767px) {
+  .root { height: calc(100dvh - 56px); }
 }

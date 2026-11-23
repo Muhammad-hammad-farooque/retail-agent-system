@@ -8,19 +8,20 @@ interface Props {
   color: 'brand' | 'emerald' | 'amber' | 'red';
 }
 
-// Tinted surface + deep ink: reads light, still 7:1+ on every label.
+// Glass card + a soft coloured wash. Colours resolve through CSS variables /
+// dark-mode overrides, so each card reads correctly in both themes.
 const surfaceMap = {
-  brand: 'bg-brand-50 border-brand-200',
-  emerald: 'bg-emerald-50 border-emerald-200',
-  amber: 'bg-amber-50 border-amber-200',
-  red: 'bg-red-50 border-red-200',
+  brand: 'border-brand-200/80 from-brand-100/70',
+  emerald: 'border-emerald-200 from-emerald-100/80 dark:from-emerald-500/15',
+  amber: 'border-amber-200 from-amber-100/80 dark:from-amber-500/15',
+  red: 'border-red-200 from-red-100/80 dark:from-red-500/15',
 };
 
 const iconMap = {
-  brand: 'bg-brand-100 text-brand-700',
-  emerald: 'bg-emerald-100 text-emerald-700',
-  amber: 'bg-amber-100 text-amber-700',
-  red: 'bg-red-100 text-red-700',
+  brand: 'bg-brand-600 text-white',
+  emerald: 'bg-emerald-600 text-white',
+  amber: 'bg-amber-500 text-white',
+  red: 'bg-red-500 text-white',
 };
 
 // The value carries the hue; labels stay neutral so they never drop below AA.
@@ -33,13 +34,17 @@ const valueMap = {
 
 export default function KpiCard({ title, value, subtitle, icon, color }: Props) {
   return (
-    <div className={`rounded-xl border p-5 ${surfaceMap[color]}`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 rounded-lg ${iconMap[color]}`}>{icon}</div>
+    <div
+      className={`glass group relative overflow-hidden rounded-2xl border bg-gradient-to-br to-transparent p-5 shadow-glass transition-all duration-300 hover:-translate-y-1 hover:shadow-glow animate-fade-up ${surfaceMap[color]}`}
+    >
+      <div className="mb-4 flex items-start justify-between">
+        <div className={`rounded-xl p-2.5 shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3 ${iconMap[color]}`}>
+          {icon}
+        </div>
       </div>
-      <div className={`text-2xl font-bold mb-0.5 ${valueMap[color]}`}>{value}</div>
+      <div className={`mb-0.5 text-2xl font-bold tracking-tight ${valueMap[color]}`}>{value}</div>
       <div className="text-sm font-medium text-ash-600">{title}</div>
-      {subtitle && <div className="text-xs text-ash-600 mt-1">{subtitle}</div>}
+      {subtitle && <div className="mt-1 text-xs text-ash-500">{subtitle}</div>}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { login } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { Store, Loader2 } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -35,11 +36,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-900 to-brand-700 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8">
+    <div className="relative min-h-screen flex items-center justify-center p-4">
+      <div className="absolute right-4 top-4">
+        <ThemeToggle variant="icon" />
+      </div>
+      <div className="glass animate-fade-up w-full max-w-md rounded-3xl border border-ash-200/70 p-8 shadow-glass">
         <div className="flex items-center gap-3 mb-8">
-          <div className="bg-brand-100 p-2.5 rounded-xl">
-            <Store className="w-7 h-7 text-brand-700" />
+          <div className="rounded-2xl bg-gradient-to-br from-brand-400 to-brand-700 p-3 text-white shadow-glow">
+            <Store className="w-7 h-7" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-ash-900">Retail Agent System</h1>
@@ -60,7 +64,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               required
               placeholder="Enter your username"
-              className="w-full rounded-lg border border-ash-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              className="w-full rounded-xl border border-ash-200 bg-surface/70 px-4 py-2.5 text-sm text-ash-900 placeholder:text-ash-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -74,7 +78,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Enter your password"
-              className="w-full rounded-lg border border-ash-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+              className="w-full rounded-xl border border-ash-200 bg-surface/70 px-4 py-2.5 text-sm text-ash-900 placeholder:text-ash-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
@@ -87,7 +91,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-brand-600 text-white rounded-lg py-2.5 text-sm font-medium hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            className="w-full rounded-xl bg-gradient-to-r from-brand-600 to-brand-500 py-2.5 text-sm font-semibold text-white shadow-glow transition hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             {loading ? 'Signing in...' : 'Sign In'}

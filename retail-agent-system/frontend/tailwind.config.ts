@@ -1,17 +1,33 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * Palette: "Aubergine & Ash".
+ * Palette: "Fresh Green" (light) / "Deep Forest" (dark).
  *
- * `brand` and `ash` are anchored on hand-picked values — brand-600, brand-800,
- * brand-100, ash-50, ash-200 and ash-900 are exact; the rest are interpolated
- * from them. Every step used for text clears WCAG AA on its intended surface.
+ * Every colour below is a CSS variable holding an `R G B` triplet (declared in
+ * app/globals.css, one set for `:root` and one for `.dark`). That lets every
+ * existing utility — `bg-brand-50`, `text-ash-600`, `border-ash-200` … — flip
+ * between the two themes automatically, with alpha support (`bg-brand-600/20`).
  *
- * Status colours stay emerald / amber / red from the default Tailwind ramps.
- * The brand sits at 295° on the hue wheel, 65-132° from all three, so a brand
- * accent can never be mistaken for a stock status.
+ * The dark theme is a deep green, never black.
  */
+const rgb = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+
+const ramp = (prefix: string) => ({
+  50: rgb(`${prefix}-50`),
+  100: rgb(`${prefix}-100`),
+  200: rgb(`${prefix}-200`),
+  300: rgb(`${prefix}-300`),
+  400: rgb(`${prefix}-400`),
+  500: rgb(`${prefix}-500`),
+  600: rgb(`${prefix}-600`),
+  700: rgb(`${prefix}-700`),
+  800: rgb(`${prefix}-800`),
+  900: rgb(`${prefix}-900`),
+  950: rgb(`${prefix}-950`),
+});
+
 const config: Config = {
+  darkMode: 'class',
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -20,31 +36,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#f7f0f9',
-          100: '#ebd7ef',
-          200: '#d6b8db',
-          300: '#c197c6',
-          400: '#a770ad',
-          500: '#9b5ea0',
-          600: '#8d4893',
-          700: '#742279',
-          800: '#5f0264',
-          900: '#51084a',
-          950: '#460c34',
+        brand: ramp('brand'),
+        ash: ramp('ash'),
+        surface: rgb('surface'),
+      },
+      boxShadow: {
+        glass: '0 1px 2px rgb(var(--shadow) / 0.06), 0 12px 32px -16px rgb(var(--shadow) / 0.28)',
+        glow: '0 0 0 1px rgb(var(--brand-400) / 0.35), 0 8px 30px -8px rgb(var(--brand-500) / 0.55)',
+      },
+      keyframes: {
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        ash: {
-          50: '#faf8fa',
-          100: '#ebe5ec',
-          200: '#ded5e0',
-          300: '#b1a7b2',
-          400: '#8d828c',
-          500: '#72686f',
-          600: '#5b4f58',
-          700: '#523349',
-          800: '#4c1f3e',
-          900: '#460c34',
-        },
+      },
+      animation: {
+        'fade-up': 'fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
       },
     },
   },
