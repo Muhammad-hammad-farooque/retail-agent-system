@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, PieChart, Pie,
+  ResponsiveContainer, Cell, PieChart, Pie, Legend,
 } from 'recharts';
 import {
   getSalesToday, getDailyRevenue, getRecentTransactions,
@@ -28,6 +28,7 @@ const PIE_COLORS = ['#2fa36b','#f2b01e','#2bb3c0','#8bc34a','#7c83e8'];
 const BAR_COLOR = '#34b57a';
 
 // Theme-aware chart chrome (values come from CSS variables in globals.css).
+const fmtAxis = (v: number) => (Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : `${v}`);
 const AXIS_TICK = { fontSize: 10, fill: 'var(--chart-axis)' };
 const TOOLTIP_STYLE = {
   background: 'var(--chart-tooltip-bg)',
@@ -132,7 +133,7 @@ export default function SalesDashboardPage() {
       value: salesToday?.count ?? 0,
       sub: `Rs. ${(salesToday?.revenue ?? 0).toLocaleString()} revenue`,
       icon: ShoppingBag,
-      bg: 'bg-brand-50 border-brand-100',
+      bg: 'border-brand-200/80 from-brand-100/70',
       text: 'text-brand-700',
       val: 'text-brand-800',
     },
@@ -141,7 +142,7 @@ export default function SalesDashboardPage() {
       value: `Rs. ${(salesToday?.revenue ?? 0).toLocaleString()}`,
       sub: 'Paid invoices only',
       icon: DollarSign,
-      bg: 'bg-emerald-50 border-emerald-100',
+      bg: 'border-emerald-200/80 from-emerald-100/70 dark:from-emerald-500/15',
       text: 'text-emerald-700',
       val: 'text-emerald-800',
     },
@@ -150,7 +151,7 @@ export default function SalesDashboardPage() {
       value: `Rs. ${(profitSummary?.today_profit ?? 0).toLocaleString()}`,
       sub: 'After cost deduction',
       icon: TrendingDown,
-      bg: 'bg-emerald-50 border-emerald-100',
+      bg: 'border-emerald-200/80 from-emerald-100/70 dark:from-emerald-500/15',
       text: 'text-emerald-700',
       val: 'text-emerald-800',
     },
@@ -159,7 +160,7 @@ export default function SalesDashboardPage() {
       value: `Rs. ${(profitSummary?.avg_order_value ?? 0).toLocaleString()}`,
       sub: 'Today\'s invoices',
       icon: Receipt,
-      bg: 'bg-brand-50 border-brand-100',
+      bg: 'border-brand-200/80 from-brand-100/70',
       text: 'text-brand-700',
       val: 'text-brand-800',
     },
@@ -168,7 +169,7 @@ export default function SalesDashboardPage() {
       value: `Rs. ${(kpis?.weekly_revenue_pkr ?? 0).toLocaleString()}`,
       sub: 'Last 7 days',
       icon: TrendingUp,
-      bg: 'bg-brand-50 border-brand-100',
+      bg: 'border-brand-200/80 from-brand-100/70',
       text: 'text-brand-700',
       val: 'text-brand-800',
     },
@@ -177,7 +178,7 @@ export default function SalesDashboardPage() {
       value: `Rs. ${(kpis?.monthly_revenue_pkr ?? 0).toLocaleString()}`,
       sub: 'This month',
       icon: Receipt,
-      bg: 'bg-amber-50 border-amber-100',
+      bg: 'border-amber-200/80 from-amber-100/70 dark:from-amber-500/15',
       text: 'text-amber-700',
       val: 'text-amber-800',
     },
@@ -217,20 +218,25 @@ export default function SalesDashboardPage() {
 
       {loading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {[...Array(6)].map((_, i) => <div key={i} className="bg-ash-100 rounded-xl h-28 animate-pulse" />)}
+          {[...Array(6)].map((_, i) => <div key={i} className="skeleton h-28" />)}
         </div>
       ) : (
         <>
           {/* KPI Cards — 6 cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
             {kpiCards.map(({ label, value, sub, icon: Icon, bg, text, val }) => (
-              <div key={label} className={`${bg} border rounded-xl p-5`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Icon className={`w-5 h-5 ${text}`} />
-                  <span className={`text-sm font-medium ${text}`}>{label}</span>
+              <div
+                key={label}
+                className={`glass group animate-fade-up rounded-2xl border bg-gradient-to-br to-transparent p-5 shadow-glass transition-all duration-300 hover:-translate-y-1 hover:shadow-glow ${bg}`}
+              >
+                <div className="mb-3 flex items-center gap-2">
+                  <span className={`grid h-8 w-8 place-items-center rounded-lg bg-surface/70 shadow-sm transition-transform duration-300 group-hover:scale-110 ${text}`}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <span className={`text-xs font-semibold uppercase tracking-wide ${text}`}>{label}</span>
                 </div>
-                <div className={`text-xl font-bold ${val}`}>{value}</div>
-                <div className={`text-xs ${text} mt-1 opacity-80`}>{sub}</div>
+                <div className={`text-xl font-bold tracking-tight ${val}`}>{value}</div>
+                <div className="mt-1 text-xs text-ash-500">{sub}</div>
               </div>
             ))}
           </div>
@@ -244,23 +250,33 @@ export default function SalesDashboardPage() {
                 <select
                   value={dayRange}
                   onChange={e => setDayRange(Number(e.target.value))}
-                  className="text-xs border border-ash-200 rounded-lg px-2 py-1 text-ash-600 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                  className="rounded-lg border border-ash-200 bg-surface/70 px-2.5 py-1.5 text-xs font-medium text-ash-700 transition focus:outline-none focus:ring-2 focus:ring-brand-400"
                 >
                   {DAY_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
               </div>
-              {daily.length === 0 ? (
-                <div className="flex items-center justify-center h-48 text-ash-500 text-sm">No data</div>
+              {daily.length === 0 || daily.every((d) => !d.revenue) ? (
+                <div className="flex h-48 flex-col items-center justify-center gap-2 text-center">
+                  <span className="grid h-12 w-12 place-items-center rounded-2xl bg-brand-100 text-brand-700"><TrendingUp className="h-6 w-6" /></span>
+                  <p className="text-sm font-medium text-ash-700">No revenue recorded in this period</p>
+                  <p className="text-xs text-ash-500">Sales will appear here as invoices are paid.</p>
+                </div>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={daily} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-                    <XAxis dataKey="label" tick={AXIS_TICK} />
-                    <YAxis tick={AXIS_TICK} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                    <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: 'var(--chart-axis)' }} formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
-                    <Bar dataKey="revenue" fill={BAR_COLOR} radius={[4, 4, 0, 0]} />
+                  <BarChart data={daily} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#58c08a" />
+                        <stop offset="100%" stopColor="#1c8450" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
+                    <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis tick={AXIS_TICK} tickFormatter={fmtAxis} axisLine={false} tickLine={false} width={40} />
+                    <Tooltip cursor={{ fill: 'rgb(var(--brand-500) / 0.1)' }} contentStyle={TOOLTIP_STYLE} itemStyle={{ color: 'var(--chart-axis)' }} formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
+                    <Bar dataKey="revenue" fill="url(#gradRevenue)" radius={[8, 8, 0, 0]} animationDuration={900} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -279,16 +295,20 @@ export default function SalesDashboardPage() {
                       dataKey="revenue"
                       nameKey="method"
                       cx="50%"
-                      cy="50%"
-                      outerRadius={70}
-                      label={({ method, percent }) => `${method} ${((percent ?? 0) * 100).toFixed(0)}%`}
-                      labelLine={false}
+                      cy="46%"
+                      innerRadius={52}
+                      outerRadius={80}
+                      paddingAngle={3}
+                      cornerRadius={6}
+                      stroke="none"
+                      animationDuration={900}
                     >
                       {profitSummary.payment_breakdown.map((_, i) => (
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: 'var(--chart-axis)' }} formatter={(v) => `Rs. ${(v as number ?? 0).toLocaleString()}`} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: 'var(--chart-axis)' }} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -304,12 +324,12 @@ export default function SalesDashboardPage() {
                 <div className="flex items-center justify-center h-48 text-ash-500 text-sm">No data</div>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={categories} layout="vertical" margin={{ top: 4, right: 8, left: 60, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
-                    <XAxis type="number" tick={AXIS_TICK} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                    <YAxis dataKey="category" type="category" tick={AXIS_TICK} width={55} />
+                  <BarChart data={categories} layout="vertical" margin={{ top: 4, right: 12, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" horizontal={false} />
+                    <XAxis type="number" tick={AXIS_TICK} tickFormatter={fmtAxis} axisLine={false} tickLine={false} />
+                    <YAxis dataKey="category" type="category" tick={AXIS_TICK} width={70} axisLine={false} tickLine={false} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: 'var(--chart-axis)' }} formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
-                    <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
+                    <Bar dataKey="revenue" radius={[0, 8, 8, 0]} animationDuration={900}>
                       {categories.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Bar>
                   </BarChart>
@@ -327,7 +347,7 @@ export default function SalesDashboardPage() {
                 <select
                   value={topPeriod}
                   onChange={e => setTopPeriod(e.target.value as 'today' | 'week' | 'month')}
-                  className="text-xs border border-ash-200 rounded-lg px-2 py-1 text-ash-600 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                  className="rounded-lg border border-ash-200 bg-surface/70 px-2.5 py-1.5 text-xs font-medium text-ash-700 transition focus:outline-none focus:ring-2 focus:ring-brand-400"
                 >
                   {PERIOD_OPTIONS.map(o => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -349,7 +369,7 @@ export default function SalesDashboardPage() {
                         </div>
                         <div className="h-1.5 bg-ash-100 rounded-full overflow-hidden">
                           <div
-                            className="h-full rounded-full"
+                            className="bar-grow h-full rounded-full"
                             style={{ width: `${pct}%`, backgroundColor: COLORS[i % COLORS.length] }}
                           />
                         </div>

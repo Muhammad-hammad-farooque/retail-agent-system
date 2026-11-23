@@ -46,7 +46,7 @@ export default function DashboardPage() {
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-ash-100 rounded-xl h-28 animate-pulse" />
+            <div key={i} className="skeleton h-36" />
           ))}
         </div>
       ) : kpis ? (
@@ -102,9 +102,9 @@ export default function DashboardPage() {
                           Rs. {cat.revenue.toLocaleString()}
                         </span>
                       </div>
-                      <div className="bg-ash-100 rounded-full h-2">
+                      <div className="h-2 overflow-hidden rounded-full bg-ash-100">
                         <div
-                          className="bg-brand-600 h-2 rounded-full transition-all"
+                          className="bar-grow h-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-700"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
