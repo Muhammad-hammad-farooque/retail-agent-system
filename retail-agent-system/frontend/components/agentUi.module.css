@@ -27,8 +27,8 @@
   flex-direction: column;
   /* AppShell's <main> sits in a min-h-screen flex row, so a percentage
      height has nothing to resolve against — pin to the viewport. */
-  height: 100vh;
-  height: 100dvh;
+  height: calc(100vh - 56px);
+  height: calc(100dvh - 56px);
   min-height: 0;
   background: var(--bg);
   color: var(--ink);
@@ -270,11 +270,19 @@
 .chipPill svg { width: 1.05em; height: 1.05em; flex: none; }
 
 .chipOn {
-  background: var(--brand-tint);
-  border-color: var(--brand-line);
+  background: linear-gradient(135deg, var(--brand-tint), var(--brand-tint-soft));
+  border-color: var(--brand);
   color: var(--brand-deep);
-  font-weight: 500;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgb(var(--brand-500) / 0.16), 0 6px 18px -8px rgb(var(--brand-600) / 0.6);
 }
+.chipOn svg { color: var(--brand); animation: bulbPulse 2.4s ease-in-out infinite; }
+@keyframes bulbPulse {
+  0%, 100% { transform: scale(1); filter: none; }
+  50% { transform: scale(1.14); filter: drop-shadow(0 0 4px rgb(var(--brand-400))); }
+}
+.chip:active { transform: scale(0.97); }
+.chip { transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.25s ease, transform 0.12s ease; }
 
 .spacer { flex: 1; }
 
@@ -383,3 +391,8 @@
 @media (max-width: 767px) {
   .root { height: calc(100dvh - 56px); }
 }
+
+.suggestion { transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease; }
+.suggestion:hover { transform: translateY(-2px); box-shadow: 0 8px 20px -10px rgb(var(--brand-600) / 0.5); }
+.msg { animation: msgIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

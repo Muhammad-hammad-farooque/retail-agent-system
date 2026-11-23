@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { ThemeProvider, themeInitScript } from '@/components/ThemeProvider';
 import RetailCanvas from '@/components/RetailCanvas';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'Retail Agent System',
@@ -11,14 +14,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         {/* Applies the saved theme before first paint (no light/dark flash). */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
       <body suppressHydrationWarning>
         <ThemeProvider>
-          {/* Interactive retail-items background, shared by every page. */}
+          {/* Interactive 3D retail-products background, shared by every page. */}
           <RetailCanvas />
           <div className="relative z-10">
             <AuthProvider>{children}</AuthProvider>

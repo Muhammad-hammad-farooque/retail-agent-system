@@ -1,4 +1,6 @@
-import { ReactNode } from 'react';
+'use client';
+
+import { ReactNode, useEffect, useState } from 'react';
 
 interface Props {
   title: string;
@@ -32,7 +34,35 @@ const valueMap = {
   red: 'text-red-900',
 };
 
+/** Animates a number (or "Rs. 1,234" style string) from 0 up to its value. */
+function useCountUp(value: string | number, ms = 900): string {
+  const raw = String(value);
+  const m = raw.match(/^([^\d-]*)(-?[\d,]+(?:\.\d+)?)(.*)$/);
+  const target = m ? parseFloat(m[2].replace(/,/g, '')) : NaN;
+  const decimals = m && m[2].includes('.') ? m[2].split('.')[1].length : 0;
+  const [n, setN] = useState(0);
+
+  useEffect(() => {
+    if (Number.isNaN(target)) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setN(target); return; }
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min((now - t0) / ms, 1);
+      setN(target * (1 - Math.pow(1 - p, 3))); // easeOutCubic
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, ms]);
+
+  if (!m || Number.isNaN(target)) return raw;
+  const shown = n.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+  return `${m[1]}${shown}${m[3]}`;
+}
+
 export default function KpiCard({ title, value, subtitle, icon, color }: Props) {
+  const display = useCountUp(value);
   return (
     <div
       className={`glass group relative overflow-hidden rounded-2xl border bg-gradient-to-br to-transparent p-5 shadow-glass transition-all duration-300 hover:-translate-y-1 hover:shadow-glow animate-fade-up ${surfaceMap[color]}`}
@@ -42,7 +72,7 @@ export default function KpiCard({ title, value, subtitle, icon, color }: Props) 
           {icon}
         </div>
       </div>
-      <div className={`mb-0.5 text-2xl font-bold tracking-tight ${valueMap[color]}`}>{value}</div>
+      <div className={`mb-0.5 text-2xl font-bold tracking-tight ${valueMap[color]}`}>{display}</div>
       <div className="text-sm font-medium text-ash-600">{title}</div>
       {subtitle && <div className="mt-1 text-xs text-ash-500">{subtitle}</div>}
     </div>
