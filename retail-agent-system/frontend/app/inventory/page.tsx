@@ -108,7 +108,7 @@ export default function InventoryPage() {
         <button
           onClick={() => setActiveTab('all')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'all' ? 'bg-white text-ash-900 shadow-sm' : 'text-ash-600 hover:text-ash-700'
+            activeTab === 'all' ? 'bg-surface text-ash-900 shadow-sm' : 'text-ash-600 hover:text-ash-700'
           }`}
         >
           <Package className="w-4 h-4" />
@@ -117,7 +117,7 @@ export default function InventoryPage() {
         <button
           onClick={() => setActiveTab('critical')}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'critical' ? 'bg-white text-ash-900 shadow-sm' : 'text-ash-600 hover:text-ash-700'
+            activeTab === 'critical' ? 'bg-surface text-ash-900 shadow-sm' : 'text-ash-600 hover:text-ash-700'
           }`}
         >
           <AlertTriangle className="w-4 h-4" />
@@ -135,7 +135,7 @@ export default function InventoryPage() {
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 category === c
                   ? 'bg-brand-600 text-white'
-                  : 'bg-white text-ash-600 border border-ash-200 hover:border-brand-300'
+                  : 'bg-surface text-ash-600 border border-ash-200 hover:border-brand-300'
               }`}
             >
               {c}
@@ -144,7 +144,7 @@ export default function InventoryPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-ash-100 p-6">
+      <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
         <ProductTable
           products={
             activeTab === 'all'

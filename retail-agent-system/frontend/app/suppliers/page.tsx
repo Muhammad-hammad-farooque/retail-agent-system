@@ -185,7 +185,7 @@ export default function SuppliersPage() {
         />
       </div>
 
-      <div className="bg-white rounded-xl border border-ash-100 p-6">
+      <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
         {loading ? (
           <div className="flex items-center justify-center h-40 text-ash-500 text-sm">Loading suppliers...</div>
         ) : suppliers.length === 0 ? (

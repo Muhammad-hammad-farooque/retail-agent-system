@@ -139,7 +139,7 @@ export default function PurchaseOrdersPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
               statusFilter === s
                 ? 'bg-brand-600 text-white'
-                : 'bg-white text-ash-600 border border-ash-200 hover:border-brand-300'
+                : 'bg-surface text-ash-600 border border-ash-200 hover:border-brand-300'
             }`}
           >
             {s ? (STATUS_DISPLAY[s] || s) : 'All'}
@@ -147,7 +147,7 @@ export default function PurchaseOrdersPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-ash-100 p-6">
+      <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
         {loading ? (
           <div className="flex items-center justify-center h-40 text-ash-500 text-sm">Loading orders...</div>
         ) : orders.length === 0 ? (

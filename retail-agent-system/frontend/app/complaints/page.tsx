@@ -81,7 +81,7 @@ export default function ComplaintsPage() {
             className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-colors ${
               statusFilter === s
                 ? 'bg-brand-600 text-white'
-                : 'bg-white text-ash-600 border border-ash-200 hover:border-brand-300'
+                : 'bg-surface text-ash-600 border border-ash-200 hover:border-brand-300'
             }`}
           >
             {s ? s.replace('_', ' ') : 'All'}
@@ -89,7 +89,7 @@ export default function ComplaintsPage() {
         ))}
       </div>
 
-      <div className="bg-white rounded-xl border border-ash-100 p-6">
+      <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
         {loading ? (
           <div className="flex items-center justify-center h-40 text-ash-500 text-sm">Loading complaints...</div>
         ) : complaints.length === 0 ? (
@@ -134,7 +134,7 @@ export default function ComplaintsPage() {
                         value={c.status}
                         disabled={updating === c.id || c.status === 'resolved'}
                         onChange={(e) => handleStatusChange(c.id, e.target.value)}
-                        className="text-xs border border-ash-200 rounded-lg px-2 py-1.5 bg-white text-ash-700 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="text-xs border border-ash-200 rounded-lg px-2 py-1.5 bg-surface text-ash-700 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {STATUS_OPTIONS.map((s) => (
                           <option key={s} value={s}>{s.replace('_', ' ')}</option>

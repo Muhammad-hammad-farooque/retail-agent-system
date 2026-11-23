@@ -22,8 +22,20 @@ interface Kpis         { monthly_revenue_pkr: number; weekly_revenue_pkr: number
 interface TopProduct   { name: string; category: string; units_sold: number; revenue: number }
 interface ProfitSummary { today_profit: number; avg_order_value: number; payment_breakdown: { method: string; count: number; revenue: number }[] }
 
-const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16'];
-const PIE_COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6'];
+// Green-led chart palette: readable on both the light and the deep-green dark theme.
+const COLORS = ['#2fa36b','#f2b01e','#2bb3c0','#8bc34a','#7c83e8','#ef6b5b','#f58a3a','#16a085'];
+const PIE_COLORS = ['#2fa36b','#f2b01e','#2bb3c0','#8bc34a','#7c83e8'];
+const BAR_COLOR = '#34b57a';
+
+// Theme-aware chart chrome (values come from CSS variables in globals.css).
+const AXIS_TICK = { fontSize: 10, fill: 'var(--chart-axis)' };
+const TOOLTIP_STYLE = {
+  background: 'var(--chart-tooltip-bg)',
+  border: '1px solid var(--chart-tooltip-border)',
+  borderRadius: 10,
+  color: 'var(--chart-axis)',
+  fontSize: 12,
+};
 
 const PAYMENT_METHODS = ['All', 'Cash', 'Card', 'Online'];
 const DAY_OPTIONS = [
@@ -226,7 +238,7 @@ export default function SalesDashboardPage() {
           {/* Row 2: Daily Revenue + Payment Method Pie */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Daily Revenue with day-range dropdown */}
-            <div className="bg-white rounded-xl border border-ash-100 p-6">
+            <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-base font-semibold text-ash-800">Daily Revenue</h2>
                 <select
@@ -244,18 +256,18 @@ export default function SalesDashboardPage() {
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={daily} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                    <Tooltip formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
-                    <Bar dataKey="revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                    <XAxis dataKey="label" tick={AXIS_TICK} />
+                    <YAxis tick={AXIS_TICK} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: 'var(--chart-axis)' }} formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
+                    <Bar dataKey="revenue" fill={BAR_COLOR} radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               )}
             </div>
 
             {/* Payment Method Pie */}
-            <div className="bg-white rounded-xl border border-ash-100 p-6">
+            <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
               <h2 className="text-base font-semibold text-ash-800 mb-4">Payment Methods</h2>
               {!profitSummary?.payment_breakdown?.length ? (
                 <div className="flex items-center justify-center h-48 text-ash-500 text-sm">No data</div>
@@ -268,7 +280,7 @@ export default function SalesDashboardPage() {
                       nameKey="method"
                       cx="50%"
                       cy="50%"
-                      outerRadius={80}
+                      outerRadius={70}
                       label={({ method, percent }) => `${method} ${((percent ?? 0) * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
@@ -276,7 +288,7 @@ export default function SalesDashboardPage() {
                         <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(v) => `Rs. ${(v as number ?? 0).toLocaleString()}`} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: 'var(--chart-axis)' }} formatter={(v) => `Rs. ${(v as number ?? 0).toLocaleString()}`} />
                   </PieChart>
                 </ResponsiveContainer>
               )}
@@ -286,17 +298,17 @@ export default function SalesDashboardPage() {
           {/* Row 3: Category Revenue + Top Products */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             {/* Category Revenue horizontal bar */}
-            <div className="bg-white rounded-xl border border-ash-100 p-6">
+            <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
               <h2 className="text-base font-semibold text-ash-800 mb-4">Revenue by Category</h2>
               {categories.length === 0 ? (
                 <div className="flex items-center justify-center h-48 text-ash-500 text-sm">No data</div>
               ) : (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart data={categories} layout="vertical" margin={{ top: 4, right: 8, left: 60, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
-                    <YAxis dataKey="category" type="category" tick={{ fontSize: 10 }} width={55} />
-                    <Tooltip formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                    <XAxis type="number" tick={AXIS_TICK} tickFormatter={(v) => `${(v/1000).toFixed(0)}k`} />
+                    <YAxis dataKey="category" type="category" tick={AXIS_TICK} width={55} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} itemStyle={{ color: 'var(--chart-axis)' }} formatter={(v) => [`Rs. ${(v as number ?? 0).toLocaleString()}`, 'Revenue']} />
                     <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
                       {categories.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                     </Bar>
@@ -306,7 +318,7 @@ export default function SalesDashboardPage() {
             </div>
 
             {/* Top Selling Products */}
-            <div className="bg-white rounded-xl border border-ash-100 p-6">
+            <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4 text-ash-600" />
@@ -350,7 +362,7 @@ export default function SalesDashboardPage() {
           </div>
 
           {/* Recent Transactions with payment method filter */}
-          <div className="bg-white rounded-xl border border-ash-100 p-6">
+          <div className="glass rounded-2xl border border-ash-200/70 shadow-glass p-6 animate-fade-up">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-ash-800">Recent Transactions</h2>
               <div className="flex gap-1">

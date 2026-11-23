@@ -20,12 +20,12 @@ export default function AgentPage() {
     <div className={`${s.root} ${inter.className}`}>
       <header className={`${s.header} ${s.enter}`}>
         <svg className={s.logo} viewBox="0 0 52 52" aria-hidden="true">
-          <g stroke="#a770ad" strokeWidth="1.4" strokeLinecap="round">
+          <g stroke="rgb(var(--brand-400))" strokeWidth="1.4" strokeLinecap="round">
             {RAYS.map((r, i) => (
               <line key={i} x1={r.x1} y1={r.y1} x2={r.x2} y2={r.y2} />
             ))}
           </g>
-          <circle cx="26" cy="26" r="7.4" fill="#5f0264" />
+          <circle cx="26" cy="26" r="7.4" fill="rgb(var(--brand-700))" />
         </svg>
 
         <div>
