@@ -7,7 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
 import {
   LayoutDashboard, Package, Receipt, Bot, LogOut, Store, Users, MessageCircleWarning,
-  ClipboardList, Truck, TrendingUp, Menu, X, PanelLeftClose, PanelLeftOpen,
+  ClipboardList, Truck, TrendingUp, Menu, X, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
 type Item = { href: string; label: string; icon: typeof Store };
@@ -144,12 +144,23 @@ export default function Navbar() {
           collapsed ? 'md:w-[76px]' : 'md:w-64'
         } ${open ? 'translate-x-0' : '-translate-x-full'}`}
       >
+        {/* Collapse / expand handle, sits on the sidebar's outer edge */}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="absolute -right-3 top-7 z-[60] hidden h-6 w-6 place-items-center rounded-full border border-ash-200 bg-surface text-ash-600 shadow-glass transition hover:scale-110 hover:border-brand-400 hover:bg-brand-600 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 md:grid"
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+
         <div className={`mb-6 hidden items-center md:flex ${collapsed ? 'justify-center' : 'justify-between'}`}>
           {collapsed ? <BrandMark compact /> : <BrandMark />}
         </div>
         <div className="h-10 md:hidden" aria-hidden="true" />
 
-        <div className="-mx-1 flex-1 overflow-y-auto overflow-x-hidden px-1">
+        <div className="scroll-auto -mx-1 flex-1 overflow-y-auto overflow-x-hidden px-1">
           {groups.map((g, i) => (
             <div key={g.title} className={i > 0 ? 'mt-5' : ''}>
               <p
@@ -166,19 +177,6 @@ export default function Navbar() {
         </div>
 
         <div className="mt-3 space-y-2.5 border-t border-ash-200 pt-3">
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            className={`hidden w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-ash-600 transition hover:bg-brand-50 hover:text-ash-900 md:flex ${
-              collapsed ? 'justify-center px-0' : ''
-            }`}
-          >
-            {collapsed ? <PanelLeftOpen className="h-[18px] w-[18px]" /> : <PanelLeftClose className="h-[18px] w-[18px]" />}
-            {!collapsed && <span>Collapse</span>}
-          </button>
-
           <div className={collapsed ? 'md:hidden' : ''}>
             <ThemeToggle />
           </div>
