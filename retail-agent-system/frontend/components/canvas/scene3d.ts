@@ -2,7 +2,9 @@
  * WebGL scene for the animated retail background.
  *
  * Lots of small, realistically shaded products drift slowly with a gentle 3D
- * tumble. Near the pointer they are pulled in, swirl around it and spin up.
+ * tumble. Near the pointer they drift slowly toward it, settle on a loose ring
+ * around it and turn more calmly; the whole field also shifts with a subtle
+ * depth parallax.
  * Physics runs in screen pixels; each frame positions are converted so the
  * perspective camera projects every item exactly onto its screen position
  * (depth only changes apparent size and parallax).
@@ -65,7 +67,8 @@ export function createRetailScene(
   let running = false;
   let last = 0;
   let t = 0;
-  const RADIUS = 250;
+  const RADIUS = 230; // pointer influence radius (px)
+  const HOLD = 115;   // distance at which attracted items come to rest (px)
 
   const setDark = (dark: boolean) => {
     renderer.toneMappingExposure = dark ? 0.9 : 1.05;
@@ -73,6 +76,8 @@ export function createRetailScene(
   };
   setDark(opts.dark);
 
+  // eased pointer offset from screen centre, in -1..1, drives the parallax
+  const par = { x: 0, y: 0 };
   const depthK = (z: number) => (camZ - z) / camZ; // world-x per screen-px at depth z
 
   const build = () => {
@@ -100,7 +105,9 @@ export function createRetailScene(
 
   const place = (it: Item) => {
     const k = depthK(it.z);
-    it.obj.position.set((it.sx - W / 2) * k, (H / 2 - it.sy) * k, it.z);
+    const depthF = 0.4 + 0.6 * ((it.z + 450) / 620); // near items shift more
+    const px = -par.x * 26 * depthF, py = -par.y * 18 * depthF;
+    it.obj.position.set((it.sx + px - W / 2) * k, (H / 2 - (it.sy + py)) * k, it.z);
     it.obj.scale.setScalar(it.size * it.scale);
   };
 
@@ -121,6 +128,11 @@ export function createRetailScene(
 
   const step = (dt: number) => {
     t += dt;
+    const tx0 = pointer.active ? (pointer.x / W) * 2 - 1 : 0;
+    const ty0 = pointer.active ? (pointer.y / H) * 2 - 1 : 0;
+    const pk = 1 - Math.exp(-2 * dt);
+    par.x += (tx0 - par.x) * pk;
+    par.y += (ty0 - par.y) * pk;
     const margin = 70;
     for (const it of items) {
       // 1) organic drift: heading slowly random-walks
@@ -130,32 +142,40 @@ export function createRetailScene(
       let tx = Math.cos(it.phase) * cruise;
       let ty = Math.sin(it.phase) * cruise;
 
-      // 2) pointer: pull in, orbit, keep a little distance
+      // 2) pointer: a very slow, soft drift toward the cursor that comes to
+      //    rest on a loose ring (no orbiting, no swarming). Items that end up
+      //    too close are eased gently outward, like water parting.
       let near = 0;
       if (pointer.active) {
-        const dx = pointer.x - it.sx, dy = pointer.y - it.sy;
+        const dx = pointer.x - it.sx, dy = pointer.y - it.sy; // item -> cursor
         const d = Math.hypot(dx, dy) || 1;
         if (d < RADIUS) {
           near = 1 - d / RADIUS;
           const nx = dx / d, ny = dy / d;
-          const pull = near * 240 * depthF;
-          const ring = d < 60 ? -(60 - d) * 5 : 0;
-          tx += nx * (pull + ring) - ny * near * 80 * depthF;
-          ty += ny * (pull + ring) + nx * near * 80 * depthF;
+          if (d > HOLD) {
+            const pull = near * 46 * depthF;               // px/s, gentle
+            tx += nx * pull;
+            ty += ny * pull;
+          } else {
+            const push = Math.pow((HOLD - d) / HOLD, 2) * 60 * depthF;
+            tx -= nx * push;
+            ty -= ny * push;
+          }
         }
       }
-      const k = 1 - Math.exp(-3.2 * dt);
+      const k = 1 - Math.exp(-1.6 * dt); // slow, floaty response
       it.vx += (tx - it.vx) * k;
       it.vy += (ty - it.vy) * k;
       it.sx += it.vx * dt;
       it.sy += it.vy * dt;
 
-      // 3D tumble, faster near the pointer
-      const spin = 1 + near * 3.2;
+      // 3D tumble: items settle (turn more slowly) as the cursor comes near,
+      // as if calmly "looking" at it, then resume when it leaves.
+      const spin = 1 - near * 0.7;
       it.obj.rotation.x += it.wx * dt * spin;
       it.obj.rotation.y += it.wy * dt * spin;
       it.obj.rotation.z += it.wz * dt * spin;
-      it.scale += ((1 + near * 0.35) - it.scale) * (1 - Math.exp(-6 * dt));
+      it.scale += ((1 + near * 0.1) - it.scale) * (1 - Math.exp(-3 * dt));
 
       // wrap around the edges
       if (it.sx < -margin) it.sx = W + margin; else if (it.sx > W + margin) it.sx = -margin;
