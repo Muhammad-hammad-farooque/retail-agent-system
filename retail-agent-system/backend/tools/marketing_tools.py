@@ -234,11 +234,15 @@ def send_promotional_email(
     message: str,
     min_loyalty_points: int = 0,
     customer_name: Optional[str] = None,
+    top_n: Optional[int] = None,
 ) -> str:
     """Send a promotional email to customers.
     - customer_name: send to a specific customer only (partial name match, e.g. 'ahmed ali')
+    - top_n: send to the top N customers ranked by loyalty points and total spent (e.g. 20 for 'top 20 customers')
     - min_loyalty_points: filter by loyalty points (e.g. 500 for VIP only). Ignored if customer_name is set.
-    - Leave both at default to send to all customers."""
+    - Leave all at default to send to all customers."""
+    if top_n is not None and top_n <= 0:
+        return "top_n must be greater than zero."
     db = _db()
     try:
         query = db.query(Customer).filter(
@@ -249,7 +253,12 @@ def send_promotional_email(
         if customer_name:
             query = query.filter(Customer.name.ilike(f"%{customer_name}%"))
         else:
-            query = query.filter(Customer.loyalty_points >= min_loyalty_points)
+            query = query.filter(Customer.loyalty_points >= min_loyalty_points).order_by(
+                Customer.loyalty_points.desc(),
+                Customer.total_spent.desc(),
+            )
+            if top_n is not None:
+                query = query.limit(top_n)
 
         customers = query.all()
 
@@ -270,7 +279,15 @@ def send_promotional_email(
                 failed += 1
                 errors.append(f"  {customer.name} ({customer.email}): {err}")
 
-        target_label = f"Customer: {customer_name}" if customer_name else f"Loyalty Points >= {min_loyalty_points}"
+        if customer_name:
+            target_label = f"Customer: {customer_name}"
+        elif top_n is not None and min_loyalty_points > 0:
+            target_label = f"Top {top_n} Customers (Loyalty Points >= {min_loyalty_points})"
+        elif top_n is not None:
+            target_label = f"Top {top_n} Customers"
+        else:
+            target_label = f"Loyalty Points >= {min_loyalty_points}"
+
         db.add(Notification(
             type=NotificationType.promotion,
             title="Promotional Email Campaign Sent",
@@ -300,8 +317,14 @@ def send_promotional_email(
 
 
 @function_tool
-def send_promotional_sms(message: str, min_loyalty_points: int = 0) -> str:
-    """Send a promotional SMS to customers via Twilio. Optionally filter by minimum loyalty points. Use 0 to send to all customers."""
+def send_promotional_sms(
+    message: str,
+    min_loyalty_points: int = 0,
+    top_n: Optional[int] = None,
+) -> str:
+    """Send a promotional SMS to customers via Twilio. Optionally filter by minimum loyalty points or top_n customers (ranked by loyalty points and total spent). Use defaults to send to all customers."""
+    if top_n is not None and top_n <= 0:
+        return "top_n must be greater than zero."
     account_sid = os.getenv("TWILIO_ACCOUNT_SID")
     auth_token = os.getenv("TWILIO_AUTH_TOKEN")
     from_number = os.getenv("TWILIO_PHONE_NUMBER")
@@ -317,11 +340,17 @@ def send_promotional_sms(message: str, min_loyalty_points: int = 0) -> str:
 
     db = _db()
     try:
-        customers = db.query(Customer).filter(
+        query = db.query(Customer).filter(
             Customer.is_active == True,
             Customer.phone != None,
             Customer.loyalty_points >= min_loyalty_points,
-        ).all()
+        ).order_by(
+            Customer.loyalty_points.desc(),
+            Customer.total_spent.desc(),
+        )
+        if top_n is not None:
+            query = query.limit(top_n)
+        customers = query.all()
 
         if not customers:
             return f"No customers found with phone numbers and loyalty points >= {min_loyalty_points}."
@@ -339,10 +368,17 @@ def send_promotional_sms(message: str, min_loyalty_points: int = 0) -> str:
             except Exception:
                 failed += 1
 
+        if top_n is not None and min_loyalty_points > 0:
+            target_label = f"Top {top_n} Customers (Loyalty Points >= {min_loyalty_points})"
+        elif top_n is not None:
+            target_label = f"Top {top_n} Customers"
+        else:
+            target_label = f"Loyalty Points >= {min_loyalty_points}"
+
         db.add(Notification(
             type=NotificationType.promotion,
             title="Promotional SMS Campaign Sent",
-            message=f"SMS sent to {sent} customers (min loyalty: {min_loyalty_points} pts). Failed: {failed}.",
+            message=f"SMS sent to {sent} customers ({target_label}). Failed: {failed}.",
             reference_id=None,
             reference_type="marketing",
         ))
@@ -350,7 +386,7 @@ def send_promotional_sms(message: str, min_loyalty_points: int = 0) -> str:
 
         return (
             f"Promotional SMS Campaign:\n"
-            f"Target Filter  : Loyalty Points >= {min_loyalty_points}\n"
+            f"Target Filter  : {target_label}\n"
             f"Total Customers: {len(customers)}\n"
             f"SMS Sent       : {sent}\n"
             f"Failed         : {failed}\n"
