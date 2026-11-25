@@ -152,8 +152,8 @@ Resolving a complaint on the `/complaints` page automatically emails the custome
 | `create_promotion` | Create a time-bound discount for a single product |
 | `create_category_promotion` | Discount every product in a category at once (e.g. "30% off all Clothing") |
 | `generate_marketing_report` | Full report: revenue trends, top category, low-margin products |
-| `send_promotional_email` | Promotional email via Brevo, filtered by `customer_name`, `min_loyalty_points`, or sent to all |
-| `send_promotional_sms` | Promotional SMS via Twilio (all customers or filtered by loyalty points) |
+| `send_promotional_email` | Promotional email via Brevo, filtered by `customer_name`, `top_n` (top N customers by loyalty points & spend), `min_loyalty_points`, or sent to all |
+| `send_promotional_sms` | Promotional SMS via Twilio (all customers, `top_n`, or filtered by loyalty points) |
 
 **Discount rules:** 1–30% proceeds immediately. 31–70% requires one-time manager confirmation. Above 70% is blocked, and no discount may price a product below cost. Base price changes (`update_price`) belong to the Inventory Agent; Marketing only handles temporary promotional discounts.
 

@@ -231,3 +231,36 @@ class TestMarketingTools:
             result = call_tool(create_promotion, sample_product.id, 10.0, "2026-05-01", "2026-05-31")
             assert "Promotion Created" in result
             assert "ACTIVE" in result
+
+    def test_send_promotional_email_top_n_orders_and_limits(self, db):
+        from backend.models.customer import Customer
+        from tests.conftest import TestingSessionLocal
+
+        c1 = Customer(name="Low Customer", email="low@test.com", loyalty_points=50, total_spent=1000.0, is_active=True)
+        c2 = Customer(name="Top Customer", email="top@test.com", loyalty_points=900, total_spent=50000.0, is_active=True)
+        c3 = Customer(name="Mid Customer", email="mid@test.com", loyalty_points=400, total_spent=20000.0, is_active=True)
+        db.add_all([c1, c2, c3])
+        db.commit()
+
+        sent_to = []
+
+        def fake_send(to_email, subject, body):
+            sent_to.append(to_email)
+            return True, ""
+
+        with patch("backend.tools.marketing_tools.SessionLocal", TestingSessionLocal), \
+             patch("backend.tools.marketing_tools.send_single_email", side_effect=fake_send):
+            from backend.tools.marketing_tools import send_promotional_email
+            result = call_tool(
+                send_promotional_email,
+                "20% Off Clothes",
+                "Enjoy 20% flat discount on clothes!",
+                0,
+                None,
+                2,
+            )
+
+        assert sent_to == ["top@test.com", "mid@test.com"]
+        assert "Top 2 Customers" in result
+        assert "Emails Sent    : 2" in result
+        assert "Status         : SUCCESS" in result
