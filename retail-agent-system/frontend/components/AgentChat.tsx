@@ -45,13 +45,17 @@ export default function AgentChat() {
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [deepThink, setDeepThink] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Shrink the box back to one line after a message is sent.
+  useEffect(() => {
+    if (!input && inputRef.current) inputRef.current.style.height = 'auto';
+  }, [input]);
 
   useEffect(() => {
     getChatHistory()
@@ -183,10 +187,7 @@ export default function AgentChat() {
         </div>
       )}
 
-      {/* Composer */}
-      {/* The entrance animation must live on the wrapper, not the composer:
-          opacity/transform on .composer would create a stacking context and
-          trap the z-index:-1 glow in front of the card instead of behind it. */}
+      {/* Composer: a plain text box and a send button. */}
       <div className={`${s.composerWrap} ${s.enterComposer}`}>
         <form
           className={s.composer}
@@ -195,8 +196,6 @@ export default function AgentChat() {
             submit();
           }}
         >
-          <div className={s.glow} aria-hidden="true" />
-
           <textarea
             ref={inputRef}
             className={s.input}
@@ -208,63 +207,21 @@ export default function AgentChat() {
             }}
             onKeyDown={onKeyDown}
             placeholder="Ask the retail AI agent…"
+            aria-label="Message the retail AI agent"
             disabled={loading}
           />
-
-          <div className={s.controls}>
-            <button
-              type="button"
-              className={`${s.chip} ${s.chipRound}`}
-              aria-label="Add attachment"
-              title="Attachments are not wired up yet"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </button>
-
-            <button
-              type="button"
-              className={`${s.chip} ${s.chipPill} ${deepThink ? s.chipOn : ''}`}
-              aria-pressed={deepThink}
-              onClick={() => setDeepThink((v) => !v)}
-              title="Visual toggle only — does not change the request yet"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M9 18h6M10 21h4" />
-                <path d="M12 3a6 6 0 0 0-3.7 10.7c.5.4.7 1 .7 1.6V16h6v-.7c0-.6.2-1.2.7-1.6A6 6 0 0 0 12 3Z" />
-              </svg>
-              <span>DeepThink</span>
-            </button>
-
-            <span className={s.spacer} />
-
-            <button
-              type="button"
-              className={s.mic}
-              aria-label="Voice input"
-              title="Voice input is not wired up yet"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="9" y="2" width="6" height="12" rx="3" />
-                <path d="M5 11a7 7 0 0 0 14 0M12 18v4" />
-              </svg>
-            </button>
-
-            <button
-              type="submit"
-              className={s.send}
-              aria-label="Send"
-              disabled={loading || !input.trim()}
-            >
-              <span className={s.sendInner}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="rgb(var(--brand-700))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 19V5M5 12l7-7 7 7" />
-                </svg>
-              </span>
-            </button>
-          </div>
+          <button
+            type="submit"
+            className={s.send}
+            aria-label="Send"
+            disabled={loading || !input.trim()}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 19V5M5 12l7-7 7 7" />
+            </svg>
+          </button>
         </form>
+        <p className={s.hint}>Press Enter to send · Shift + Enter for a new line</p>
       </div>
     </div>
   );
