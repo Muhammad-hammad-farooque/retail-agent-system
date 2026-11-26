@@ -268,3 +268,30 @@ main table tbody tr { transition: background-color 0.15s ease; }
 main table tbody tr:hover { background-color: rgb(var(--brand-50) / 0.7); }
 
 main h1 { letter-spacing: -0.02em; }
+
+
+/* ============================================================
+   Theme switch: circular reveal (View Transitions API)
+   The animation itself is driven from ThemeProvider.tsx; these rules
+   switch off the browser's default cross-fade so only the reveal shows.
+   ============================================================ */
+html.theme-switching::view-transition-old(root),
+html.theme-switching::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html.theme-switching::view-transition-old(root) { z-index: 1; }
+html.theme-switching::view-transition-new(root) { z-index: 2; }
+
+/* No per-element colour transitions while the snapshot is being revealed,
+   otherwise the new theme would still be fading in inside the circle. */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+
+/* A list that can scroll on very short screens but never shows a scrollbar. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }

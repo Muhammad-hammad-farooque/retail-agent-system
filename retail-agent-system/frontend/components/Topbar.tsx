@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import UserMenu from '@/components/UserMenu';
 import { CalendarDays, ChevronRight, Clock } from 'lucide-react';
 
 const TITLES: Record<string, string> = {
@@ -20,7 +20,6 @@ const TITLES: Record<string, string> = {
 
 export default function Topbar() {
   const pathname = usePathname();
-  const { user } = useAuth();
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -53,17 +52,9 @@ export default function Topbar() {
           </div>
         )}
         <ThemeToggle variant="icon" className="!h-9 !w-9" />
-        {user && (
-          <div className="flex items-center gap-2.5 border-l border-ash-200 pl-4">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-brand-400 to-brand-700 text-xs font-bold uppercase text-white">
-              {user.username?.[0] ?? '?'}
-            </span>
-            <div className="hidden leading-tight sm:block">
-              <div className="text-sm font-semibold text-ash-900">{user.username}</div>
-              <div className="text-[10px] font-medium uppercase tracking-wider text-ash-500">{user.role}</div>
-            </div>
-          </div>
-        )}
+        <div className="border-l border-ash-200 pl-3">
+          <UserMenu />
+        </div>
       </div>
     </header>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import type { MouseEvent } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/components/ThemeProvider';
 
@@ -14,16 +15,24 @@ export default function ThemeToggle({ variant = 'pill', className = '' }: Props)
   const isDark = theme === 'dark';
   const label = isDark ? 'Switch to light mode' : 'Switch to dark mode';
 
+  // The theme change spreads out from the centre of the button that was used.
+  const onClick = (e: MouseEvent<HTMLButtonElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    toggle({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+  };
+
   if (variant === 'icon') {
     return (
       <button
         type="button"
-        onClick={toggle}
+        onClick={onClick}
         aria-label={label}
         title={label}
-        className={`glass grid h-10 w-10 place-items-center rounded-full border border-ash-200 text-ash-700 shadow-glass transition hover:scale-105 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${className}`}
+        className={`glass group grid h-10 w-10 place-items-center rounded-full border border-ash-200 text-ash-700 shadow-glass transition hover:scale-105 hover:text-brand-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ${className}`}
       >
-        {isDark ? <Sun className="h-[18px] w-[18px]" /> : <Moon className="h-[18px] w-[18px]" />}
+        {isDark
+          ? <Sun className="h-[18px] w-[18px] transition-transform duration-500 group-hover:rotate-45" />
+          : <Moon className="h-[18px] w-[18px] transition-transform duration-500 group-hover:-rotate-12" />}
       </button>
     );
   }
@@ -31,7 +40,7 @@ export default function ThemeToggle({ variant = 'pill', className = '' }: Props)
   return (
     <button
       type="button"
-      onClick={toggle}
+      onClick={onClick}
       aria-label={label}
       title={label}
       role="switch"

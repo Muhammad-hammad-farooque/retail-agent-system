@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/ThemeToggle';
+import UserMenu from '@/components/UserMenu';
 import {
-  LayoutDashboard, Package, Receipt, Bot, LogOut, Store, Users, MessageCircleWarning,
+  LayoutDashboard, Package, Receipt, Bot, Store, Users, MessageCircleWarning,
   ClipboardList, Truck, TrendingUp, Menu, X, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
@@ -62,7 +62,6 @@ function BrandMark({ compact }: { compact?: boolean }) {
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, logout } = useAuth();
   const [open, setOpen] = useState(false);        // mobile drawer
   const [collapsed, setCollapsed] = useState(false); // desktop rail
 
@@ -95,7 +94,7 @@ export default function Navbar() {
           href={href}
           title={collapsed ? text : undefined}
           aria-current={active ? 'page' : undefined}
-          className={`group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${
+          className={`group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-all duration-200 ${
             active
               ? 'bg-gradient-to-r from-brand-600 to-brand-500 font-semibold text-white shadow-glow'
               : 'font-medium text-ash-600 hover:bg-brand-50 hover:text-ash-900'
@@ -118,15 +117,19 @@ export default function Navbar() {
       {/* Mobile top bar */}
       <div className="glass fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-ash-200 px-4 md:hidden">
         <BrandMark />
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          aria-expanded={open}
-          className="grid h-9 w-9 place-items-center rounded-lg text-ash-700 hover:bg-brand-50"
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle variant="icon" className="!h-9 !w-9" />
+          <UserMenu compact />
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
+            className="grid h-9 w-9 place-items-center rounded-lg text-ash-700 hover:bg-brand-50"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -155,14 +158,14 @@ export default function Navbar() {
           {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
         </button>
 
-        <div className={`mb-6 hidden items-center md:flex ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        <div className={`mb-5 hidden items-center md:flex ${collapsed ? 'justify-center' : 'justify-between'}`}>
           {collapsed ? <BrandMark compact /> : <BrandMark />}
         </div>
         <div className="h-10 md:hidden" aria-hidden="true" />
 
-        <div className="scroll-auto -mx-1 flex-1 overflow-y-auto overflow-x-hidden px-1">
+        <div className="no-scrollbar -mx-1 flex-1 overflow-y-auto overflow-x-hidden px-1">
           {groups.map((g, i) => (
-            <div key={g.title} className={i > 0 ? 'mt-5' : ''}>
+            <div key={g.title} className={i > 0 ? 'mt-4' : ''}>
               <p
                 className={`mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-ash-500 transition-opacity ${
                   collapsed ? 'md:hidden' : ''
@@ -171,38 +174,11 @@ export default function Navbar() {
                 {g.title}
               </p>
               {collapsed && i > 0 && <div className="mx-3 mb-2 hidden border-t border-ash-200 md:block" />}
-              <ul className="space-y-1">{g.items.map(renderLink)}</ul>
+              <ul className="space-y-0.5">{g.items.map(renderLink)}</ul>
             </div>
           ))}
         </div>
 
-        <div className="mt-3 space-y-2.5 border-t border-ash-200 pt-3">
-          <div className={collapsed ? 'md:hidden' : ''}>
-            <ThemeToggle />
-          </div>
-
-          {user && (
-            <div className={`flex items-center gap-2 px-1 ${collapsed ? 'md:flex-col' : 'justify-between'}`}>
-              <div className="flex min-w-0 items-center gap-2.5">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-400 to-brand-700 text-sm font-bold uppercase text-white">
-                  {user.username?.[0] ?? '?'}
-                </span>
-                <div className={`min-w-0 ${collapsed ? 'md:hidden' : ''}`}>
-                  <div className="truncate text-sm font-semibold text-ash-900">{user.username}</div>
-                  <div className="text-[10px] font-medium uppercase tracking-wide text-ash-500">{user.role}</div>
-                </div>
-              </div>
-              <button
-                onClick={logout}
-                aria-label="Logout"
-                title="Logout"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-ash-600 transition-colors hover:bg-red-50 hover:text-red-700"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-        </div>
       </nav>
     </>
   );
